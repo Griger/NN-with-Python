@@ -1,13 +1,29 @@
 import gzip
 import struct
 import numpy as np
+from theano import config
 
 def readInt (file):
+    """Function that reads an integer from a file with big-endian order
+
+    :param file: file from we read
+    :returns: read int
+    """
     return struct.unpack('>i', file.read(4))[0]
 
 def readUnsignedByte (file):
+    """Function that reads an unsigned char for a file with native order
+
+    :param file: file from we read
+    :returns: read unsigned char
+    """
     return struct.unpack('B', file.read(1))[0]
 
+def normalizeImage (image):
+    normalizedIm = image*1.0/255.0
+    return normalizedIm
+
+# Function that loads MNIST images from a file
 def readImages (filename):
     file = gzip.GzipFile(filename, 'rb')
     magicNumber = readInt(file)
@@ -15,40 +31,55 @@ def readImages (filename):
     rows = readInt(file)
     cols = readInt(file)
 
-    print("Nº images: " + str(nImages) + " Rows: " + str(rows) + " Cols: " + str(cols))
+    imageLimit = nImages
+    images = np.zeros((imageLimit, rows*cols), dtype = config.floatX)
 
-    imageLimit = 100
-    images = np.zeros((imageLimit, rows, cols))
-
+    #Load images
     for i in range(imageLimit):
-        for j in range(rows):
-            for k in range(cols):
-                images[i,j,k] = readUnsignedByte(file)
+        for j in range(rows*cols):
+            images[i,j] = readUnsignedByte(file)
 
-    return images
+    #Normalize images
+    normImages = np.apply_along_axis(normalizeImage, 0, images)
 
-def normalize (image):
-    rows = 28
-    cols = 28
-    normalizedIm = np.zeros((rows,cols))
+    return normImages
 
-    for i in range(rows):
-        for j in range(cols):
-            normalizedIm[i,j] = image[i,j]*1.0/255.0
+def readLabels (filename):
+    file = gzip.GzipFile(filename, 'rb')
+    magicNumber = readInt(file)
+    size = readInt(file)
 
-    return normalizedIm
+    labels = np.zeros(size, dtype = config.floatX)
+
+    for i in range(size):
+        labels[i] = readUnsignedByte(file)
+
+    return labels
+
+def printFormattedImage (image):
+    for i in range(28):
+        for j in range(28):
+            if (image[i*28+j] != 0.0):
+                print(1, end="")
+            else:
+                print(0, end="")
+        print("")
+
+#Load images and labels from DB files
+images = readImages("mnist.data/"+"train-images-idx3-ubyte.gz")
+labels = readLabels("mnist.data/"+"train-labels-idx1-ubyte.gz")
+imagesTest = readImages("mnist.data/"+"t10k-images-idx3-ubyte.gz")
+labelsTest = readLabels("mnist.data/"+"t10k-labels-idx1-ubyte.gz")
+
+#Save loaded images and labels
+np.save("data/"+"trainImg.npy", images)
+np.save("data/"+"trainLbl.npy", labels)
+np.save("data/"+"testImg.npy", imagesTest)
+np.save("data/"+"testLbl.npy", labelsTest)
 
 
-images = readImages("mnist.data/"+"t10k-images-idx3-ubyte.gz")
-
-normalizedIm = normalize(images[61])
-print("Normalized images: ")
-print(normalizedIm)
-
-for i in range(28):
-    for j in range(28):
-        if (normalizedIm[i,j] != 0.0):
-            print(1, end="")
-        else:
-            print(0, end="")
-    print("")
+#Some tests
+idx = 61
+#normalizedIm = normalize(images[idx])
+printFormattedImage(images[idx])
+print("La etiqueta asociada a esta imagen es: ", labels[idx])
