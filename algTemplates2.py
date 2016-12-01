@@ -22,10 +22,11 @@ f = function([u,X], T.dot(u,X))
 
 t0 = time.time()
 for img, lbl in zip(imgs, lbls):
-    predicha = np.argmax(f(img, w))
+    predicha = np.argmax(f(img, w) + b)
     if (predicha == lbl):
         w[img > 0,predicha] += lr
     else:
+        w[img > 0, int(lbl)] += lr
         w[img > 0, predicha] -= lr
 t1 = time.time()
 
