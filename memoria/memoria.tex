@@ -3,8 +3,205 @@
 \usepackage{amsmath}
 \usepackage{amsfonts}
 \usepackage{amssymb}
-\author{Gustavo Rivas Gervilla}
-\title{Práctica IC: Redes Neuronales para MNIST}
+
+\usepackage{float}
+\usepackage[table,xcdraw]{xcolor} %para usar tablas con color de fondo en las celdas
+\usepackage{hyperref} %para poder poner enlaces
+\usepackage{listings} %para insertar código
+\usepackage{tikz}%para pintar las redes neuronales
+\usepackage{color} %para poder definir y usar colores
+\usepackage{soul} %para hacer los subrayados
+
+
+\author{\textbf{Gustavo Rivas Gervilla}}
+\title{\textcolor{deepblue}{\textbf{Redes Neuronales para MNIST}}}
+\date{}
+
+%Configurando lstlisting para mostrar código Python con algún esquema de colores (copiado de http://tex.stackexchange.com/questions/83882/how-to-highlight-python-syntax-in-latex-listings-lstinputlistings-command) ------------------------------
+% Custom colors
+\definecolor{deepblue}{rgb}{0,0,0.5}
+\definecolor{deepred}{rgb}{0.6,0,0}
+\definecolor{deepgreen}{rgb}{0,0.5,0}
+\definecolor{light-gray}{gray}{0.85}
+\definecolor{light-green}{rgb}{0.66,1,0.5}
+
+% Default fixed font does not support bold face
+\DeclareFixedFont{\ttb}{T1}{txtt}{bx}{n}{8} % for bold
+\DeclareFixedFont{\ttm}{T1}{txtt}{m}{n}{8}  % for normal
+
+%Configuración de los listings
+\lstset{
+	language=Python,
+	basicstyle=\ttm,
+	otherkeywords={self},             % Add keywords here
+	keywordstyle=\ttb\color{deepblue},
+	emph={MyClass,__init__},          % Custom highlighting
+	emphstyle=\ttb\color{deepred},    % Custom highlighting style
+	stringstyle=\color{deepgreen},
+	frame=tb,                         % Any extra options here
+	showstringspaces=false            % 
+}
+%--------------------------------------------------------------------------------
+
+\newcommand{\code}[1]{\sethlcolor{light-gray}\hl{\texttt{#1}}} %Comando para poner código inline
+\newcommand{\archive}[1]{\sethlcolor{light-green}\hl{\texttt{#1}}} %Comando para resaltar nombres de archivos
+
+
 \begin{document}
-Usaremos Theano
+\maketitle
+\begin{center}
+\textbf{IC. Máster Universitario en Ingeniería Informática}
+\newline
+\newline
+\newline
+\includegraphics[scale=0.5]{img/decsai}
+\end{center}
+
+\newpage
+\tableofcontents
+\newpage
+
+%Definición de variables para tikz
+\def\layersep{2.5cm}
+
+\section{Introducción}
+
+En esta práctica se pretende probar distintos algoritmos de aprendizaje y topologías para redes neuronales a fin de identificar dígitos manuscritos en las imágenes de la base de datos MNIST. Se cuenta con 60000 muestras de entrenamiento y otras 10000 para testear la bondad de los algoritmos probados, que sería medida en términos de la tasa de error.\\
+
+Las imágenes se cargarán de sendos ficheros comprimidos empleando el código que podemos encontrar en el fichero \archive{reader.py} el cuál se encarga de obtener cada imagen del fichero comprimido, formateando correctamente los bytes que se van leyendo de dicho fichero y normalizando las imágenes para su posterior almacenamiento (en el directorio \archive{data}) y uso. Para realizar esta descompresión y normalización nos hemos basado en el código Java facilitado por el profesor a tal efecto.
+
+\section{Herramientas y entorno de desarrollo}
+Para la realización de esta práctica hemos optado por emplear el lenguaje \textbf{Python 3} pese a que podemos pensar que no es tan eficiente como otros lenguajes, tiene la ventaja de contar con el módulo \textbf{Numpy} cuyas operaciones están programadas en código C lo que lo hace muy eficiente para realizar cálculos vectoriales.\\
+
+No obstante nosotros vamos a trabajar con otro módulo Python llamado \href{http://deeplearning.net/software/theano/index.html}{Theano} el cuál nos permite, de un modo transparente, realizar cálculos en la GPU, lo que en la mayoría de los casos hará que los cálculos a realizar sean mucho más eficientes. Aunque hemos de tener cuidado ya que, en primer lugar los cálculos han de realizarse empleando float32 en lugar de float64 para que se puedan realizar efectivamente en la GPU (en caso de no poderse realizar en GPU automáticamente se lanzarán en CPU a no ser que empleemos el flag \textit{force\_devide=True}). Por otro lado habrá código que se ejecuten más lento en la GPU que en la CPU ya sea porque no los hemos programado bien o porque no suponen un volumen de trabajo suficiente como para que la sobrecarga de enviar la información a la GPU sea rentable.\\
+
+A fin de poder emplear esta computación en GPU ejecutaremos el archivo \archive{reader.py} la instrucción \code{THEANO\_FLAGS=mode=FAST\_RUN,device=cpu,floatX=float32 python reader.py}.\\
+
+En la \href{http://deeplearning.net/software/theano/tutorial/using_gpu.html}{página} de Theano donde se nos explica cómo usar la GPU hay un código de ejemplo el cuál se ejecuta en menos de 1/3 del tiempo que se consumiría ejecutando dicho código en CPU.
+
+Por otro lado podemos encontrar un ejemplo sobre cómo programar una red neuronal que trabaje con minilotes de un modo eficiente usando la funcionalidad de Theano:
+
+\begin{lstlisting}
+import numpy as np
+
+import theano
+import theano.tensor as tensor
+
+x = np.load('data_x.npy')
+y = np.load('data_y.npy')
+
+# symbol declarations
+sx = tensor.matrix()
+sy = tensor.matrix()
+w = theano.shared(np.random.normal(avg=0, std=.1,
+                                   size=(784, 500)))
+b = theano.shared(np.zeros(500))
+v = theano.shared(np.zeros((500, 10)))
+c = theano.shared(np.zeros(10))
+
+# symbolic expression-building
+hid = tensor.tanh(tensor.dot(sx, w) + b)
+out = tensor.tanh(tensor.dot(hid, v) + c)
+err = 0.5 * tensor.sum(out - sy) ** 2
+gw, gb, gv, gc = tensor.grad(err, [w, b, v, c])
+
+# compile a fast training function
+train = theano.function([sx, sy], err,
+    updates={
+        w: w - lr * gw,
+        b: b - lr * gb,
+        v: v - lr * gv,
+        c: c - lr * gc})
+
+# now do the computations
+batchsize = 100
+for i in xrange(1000):
+    x_i = x[i * batchsize: (i + 1) * batchsize]
+    y_i = y[i * batchsize: (i + 1) * batchsize]
+    err_i = train(x_i, y_i)
+\end{lstlisting}
+
+Este código nos servirá de guía para implementar los distintos algoritmos sobre redes neuronales que probaremos en esta práctica. Destacaría dos cosas del código anterior: cómo se definen las funciones para ser compiladas a fin de trabajar en GPU y lo sencillo que resulta calcular el gradiente del error para realizar la propagación hacia atrás, por supuesto contamos con que dicha operación esté optimizada.\\
+
+Las pruebas se realizarán en un ordeandor con \textbf{Arch Linux 64b}, \textbf{8 GB} de memoria RAM, un procesador \textbf{Intel Core i7-6700HQ} a 3.5 GHz y una tarjeta gráfica \textbf{NVIDIA GeForce GTX 950M}.
+
+\section{Algoritmos basados en plantillas}
+
+A continuación vamos a ver los primeros algoritmo de aprendizaje que vimos en clase y que son de un funcionamiento muy básico. Estos algoritmos podríamos decir que están basados en plantillas ya que tenemos una neurona por cada uno de los dígitos a distinguir y se irán actualizando los peso de cada una a fin de reforzar aquellos píxeles que forman parte del número que cada una ha de reconocer y se irán debilitando los pesos de los píxeles que no forman parte del dígito que tienen que reconer y que por tanto sólo puede llevar a la neurona, y por última instancia a la red, a confusión. Por esto decimos que estos algoritmos se basan en plantillas, cada neurona almacenará una plantilla 28x28 que le dará los pesos que necesita para reconocer el dígito concreto que ha de reconocer. Contemplearemos tres aproximaciones:
+
+\subsection{Penalización fija por equivocación (Plantillas 1)}
+\subsection{Penalización fija y refuerzo de neurona correcta (Plantillas 2)}
+\subsection{Actualización de pesos según el error (Plantillas 3)}
+
+Para este algoritmo nos hemos basado en el siguiente enlace: \url{https://mmlind.github.io/Simple_1-Layer_Neural_Network_for_MNIST_Handwriting_Recognition/}
+
+
+
+\begin{center}
+
+\begin{tikzpicture}[shorten >=1pt,->,draw=black!50, node distance=\layersep]
+    \tikzstyle{every pin edge}=[<-,shorten <=1pt]
+    \tikzstyle{neuron}=[circle,fill=black!25,minimum size=17pt,inner sep=0pt]
+    \tikzstyle{input neuron}=[neuron, fill=green!50];
+    \tikzstyle{output neuron}=[neuron, fill=red!50];
+    \tikzstyle{hidden neuron}=[neuron, fill=blue!50];
+    \tikzstyle{annot} = [text width=4em, text centered]
+
+    % Draw the input layer nodes
+    \foreach \name / \y in {1,...,4}
+    % This is the same as writing \foreach \name / \y in {1/1,2/2,3/3,4/4}
+        \node[input neuron, pin=left:Input \#\y] (I-\name) at (0,-\y) {};
+
+    % Draw the hidden layer nodes
+    \foreach \name / \y in {1,...,5}
+        \path[yshift=0.5cm]
+            node[hidden neuron] (H-\name) at (\layersep,-\y cm) {};
+
+    % Draw the output layer node
+    \node[output neuron,pin={[pin edge={->}]right:Output}, right of=H-3] (O) {};
+
+    % Connect every node in the input layer with every node in the
+    % hidden layer.
+    \foreach \source in {1,...,4}
+        \foreach \dest in {1,...,5}
+            \path (I-\source) edge (H-\dest);
+
+    % Connect every node in the hidden layer with the output layer
+    \foreach \source in {1,...,5}
+        \path (H-\source) edge (O);
+
+    % Annotate the layers
+    \node[annot,above of=H-1, node distance=1cm] (hl) {Hidden layer};
+    \node[annot,left of=hl] {Input layer};
+    \node[annot,right of=hl] {Output layer};
+\end{tikzpicture}
+
+\end{center}
+
+\section{Resumen de resultados}
+
+\begin{table}[H]
+\centering
+\caption{Resumen de resultados}
+\label{my-label}
+\begin{tabular}{|c|l|l|l|l|}
+\hline
+\rowcolor[HTML]{FFFC9E} 
+\textbf{Algoritmo}                   & \multicolumn{1}{c|}{\cellcolor[HTML]{FFFC9E}\textbf{\begin{tabular}[c]{@{}c@{}}Archivo\\ algoritmo\end{tabular}}} & \multicolumn{1}{c|}{\cellcolor[HTML]{FFFC9E}\textbf{\begin{tabular}[c]{@{}c@{}}Archivo \\ pesos\end{tabular}}} & \multicolumn{1}{c|}{\cellcolor[HTML]{FFFC9E}\textbf{Porcentaje de acierto}} & \multicolumn{1}{c|}{\cellcolor[HTML]{FFFC9E}\textbf{Tiempo de entrenamiento}} \\ \hline
+\cellcolor[HTML]{FFFFC7}Plantillas 1 &                                                                                                                   &                                                                                                                &                                                                             &                                                                               \\ \hline
+\cellcolor[HTML]{FFFFC7}Plantillas 2 &                                                                                                                   &                                                                                                                &                                                                             &                                                                               \\ \hline
+\cellcolor[HTML]{FFFFC7}Plantillas 3 &                                                                                                                   &                                                                                                                &                                                                             &                                                                               \\ \hline
+\end{tabular}
+\end{table}
+
+\section{Manual de usuario}
+
+\section{Bibliografía}
+
+\begin{itemize}
+	\item \href{http://deeplearning.net/software/theano/index.html}{Documentación Theano}
+	\item \url{http://deeplearning.net/tutorial/mlp.html} (no usado)
+\end{itemize}
+
+
 \end{document}
