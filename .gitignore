@@ -90,3 +90,6 @@ ENV/
 
 # DB loaded data folder
 data/
+
+#Latex tables
+memoria/tables
