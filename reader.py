@@ -56,6 +56,14 @@ def readLabels (filename):
 
     return labels
 
+def labelsToBinary (lbls):
+    binaryLbls = np.zeros((len(lbls), 10), dtype = config.floatX)
+
+    for lbl, binarylbl in zip(lbls, binaryLbls):
+        binarylbl[int(lbl)] = 1.0
+
+    return binaryLbls
+
 def printFormattedImage (image):
     for i in range(28):
         for j in range(28):
@@ -68,6 +76,7 @@ def printFormattedImage (image):
 #Load images and labels from DB files
 images = readImages("mnist.data/"+"train-images-idx3-ubyte.gz")
 labels = readLabels("mnist.data/"+"train-labels-idx1-ubyte.gz")
+binLabels = labelsToBinary(labels)
 imagesTest = readImages("mnist.data/"+"t10k-images-idx3-ubyte.gz")
 labelsTest = readLabels("mnist.data/"+"t10k-labels-idx1-ubyte.gz")
 
@@ -76,3 +85,4 @@ np.save("data/"+"trainImg.npy", images)
 np.save("data/"+"trainLbl.npy", labels)
 np.save("data/"+"testImg.npy", imagesTest)
 np.save("data/"+"testLbl.npy", labelsTest)
+np.save("data/"+"binTrainLbl.npy", binLabels)
