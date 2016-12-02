@@ -12,7 +12,6 @@
 \usepackage{color} %para poder definir y usar colores
 \usepackage{soul} %para hacer los subrayados
 
-
 \author{\textbf{Gustavo Rivas Gervilla}}
 \title{\textcolor{deepblue}{\textbf{Redes Neuronales para MNIST}}}
 \date{}
@@ -45,7 +44,8 @@
 
 \newcommand{\code}[1]{\sethlcolor{light-gray}\hl{\texttt{#1}}} %Comando para poner código inline
 \newcommand{\archive}[1]{\sethlcolor{light-green}\hl{\texttt{#1}}} %Comando para resaltar nombres de archivos
-
+\renewcommand\tablename{Tabla} %Cambiar el nombre de las tablas
+\renewcommand{\contentsname}{Índice} %Cambiar el nombre de la ToC
 
 \begin{document}
 \maketitle
@@ -127,12 +127,53 @@ Las pruebas se realizarán en un ordeandor con \textbf{Arch Linux 64b}, \textbf{
 
 \section{Algoritmos basados en plantillas}
 
-A continuación vamos a ver los primeros algoritmo de aprendizaje que vimos en clase y que son de un funcionamiento muy básico. Estos algoritmos podríamos decir que están basados en plantillas ya que tenemos una neurona por cada uno de los dígitos a distinguir y se irán actualizando los peso de cada una a fin de reforzar aquellos píxeles que forman parte del número que cada una ha de reconocer y se irán debilitando los pesos de los píxeles que no forman parte del dígito que tienen que reconer y que por tanto sólo puede llevar a la neurona, y por última instancia a la red, a confusión. Por esto decimos que estos algoritmos se basan en plantillas, cada neurona almacenará una plantilla 28x28 que le dará los pesos que necesita para reconocer el dígito concreto que ha de reconocer. Contemplearemos tres aproximaciones:
+A continuación vamos a ver los primeros algoritmo de aprendizaje que vimos en clase y que son de un funcionamiento muy básico. Estos algoritmos podríamos decir que están basados en plantillas ya que tenemos una neurona por cada uno de los dígitos a distinguir y se irán actualizando los peso de cada una a fin de reforzar aquellos píxeles que forman parte del número que cada una ha de reconocer y se irán debilitando los pesos de los píxeles que no forman parte del dígito que tienen que reconer y que por tanto sólo puede llevar a la neurona, y por última instancia a la red, a confusión. Por esto decimos que estos algoritmos se basan en plantillas, cada neurona almacenará una plantilla 28x28 que le dará los pesos que necesita para reconocer el dígito concreto que ha de reconocer. Contemplearemos tres aproximaciones, con una topología que podríamos describir por medio del siguiente esquema:
+
+\begin{center}
+\begin{tikzpicture}[shorten >=1pt,->,draw=black!50, node distance=\layersep]
+    \tikzstyle{every pin edge}=[<-,shorten <=1pt]
+    \tikzstyle{entry}=[circle,fill=green!50,minimum size=5pt,inner sep=0pt]
+    \tikzstyle{neuron}=[circle,fill=black!25,minimum size=10pt,inner sep=0pt]
+    \tikzstyle{hidden neuron}=[neuron, fill=orange!50];
+    \tikzstyle{annot} = [text width=4em, text centered]
+
+    % Draw the input layer nodes
+    \foreach \name / \y in {0,1}
+    % This is the same as writing \foreach \name / \y in {1/1,2/2,3/3,4/4}
+        \node[entry, pin=left:$pixel_{\y}$] (I-\name) at (0,-\y cm) {};
+    
+    \node at (-1,-3) {\vdots};
+    \node[entry, pin=left:$pixel_{782}$] (I-782) at (0,-5) {};
+    \node[entry, pin=left:$pixel_{783}$] (I-783) at (0,-6) {};
+
+    % Draw the hidden layer nodes
+    \foreach \name / \y in {0,...,9}
+        \path[yshift=0.5cm]
+            node[hidden neuron, pin={[pin edge={->}]right:$salida_{\y}$}] (H-\name) at (\layersep,-\y cm) {};
+
+    % Connect every node in the input layer with every node in the
+    % hidden layer.
+    \foreach \source in {0,1,782,783}
+        \foreach \dest in {0,...,9}
+            \path (I-\source) edge (H-\dest);
+
+    % Annotate the layers
+    \node[annot,above of=H-0, node distance=1cm] (hl) {Salidas};
+    \node[annot,left of=hl] {Entradas};    
+\end{tikzpicture}
+\end{center}
 
 \subsection{Penalización fija por equivocación (Plantillas 1)}
+
+Este algoritmo que lo podemos encontrar en \archive{algTemplates1.py} es muy sencillo, lo que hace es aumentar o disminuir una cantidad fija (\code{lr}) a aquellos pesos de la neurona que ha ganado la votación (que sería aquella tal que el valor $\underset{j = 0}{\overset{28^2-1}{\Sigma}} w_{ij}img_j$, donde $w_{ij}$ es el peso de la neurona i-ésima para el píxel $j$ de la imagen, es el más alto) correspondientes a los píxeles activos de la imagen; aquellos con un valor superior a cero en la imagen.\\
+
+Hay que señalar que en caso de realizar esta actualización a todos los pesos de la neurona, en lugar de sólo a los activos, entonce el error sería mucho más grande (aprox. un 85\%). Esto se debe a que estamos trabajando con algoritmos que sólo cambian su información de aprendizaje según la imagen que le damos como entrada, entonces si aportamos información a través de pesos correspondientes a píxeles de la imagen que no contenían información, lo único que hacemos es ``confundir'' a la red.
+
 \subsection{Penalización fija y refuerzo de neurona correcta (Plantillas 2)}
 
 En este caso es mucho menor el tiempo al ejecutar el cógido en CPU que en GPU (en CPU tadamos menos de 3 segundos y en cambio en GPU tarda algo más de 25), es decir, tal y como está planteado el algoritmo la sobrecarga que supone trasladar la información a la GPU es mayor que el tiempo de ejecución del algoritmo en sí.
+
+Hay algo que destacar y es que en una primera prueba se había omitido el vector de bias, y el error era ligeramente menor que al incorporarlo. En mi opinión esto se debe a que como estamos trabajando con un sistema de plantillas lo único que hacemos al incorporar este elemento es introducir una información que realmente es ficticia; la actualización de pesos viene sólo dada por los píxeles activos en la imagen de entrada.
 
 \subsection{Actualización de pesos según el error (Plantillas 3)}
 
@@ -143,7 +184,6 @@ Para este algoritmo nos hemos basado en el siguiente enlace: \url{https://mmlind
 
 
 \begin{center}
-
 \begin{tikzpicture}[shorten >=1pt,->,draw=black!50, node distance=\layersep]
     \tikzstyle{every pin edge}=[<-,shorten <=1pt]
     \tikzstyle{neuron}=[circle,fill=black!25,minimum size=17pt,inner sep=0pt]
@@ -180,7 +220,6 @@ Para este algoritmo nos hemos basado en el siguiente enlace: \url{https://mmlind
     \node[annot,left of=hl] {Input layer};
     \node[annot,right of=hl] {Output layer};
 \end{tikzpicture}
-
 \end{center}
 
 \section{Resumen de resultados}

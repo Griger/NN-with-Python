@@ -76,10 +76,3 @@ np.save("data/"+"trainImg.npy", images)
 np.save("data/"+"trainLbl.npy", labels)
 np.save("data/"+"testImg.npy", imagesTest)
 np.save("data/"+"testLbl.npy", labelsTest)
-
-
-#Some tests
-idx = 61
-#normalizedIm = normalize(images[idx])
-printFormattedImage(images[idx])
-print("La etiqueta asociada a esta imagen es: ", labels[idx])

@@ -18,11 +18,11 @@ w = np.random.rand(ROWS*COLS, 10).astype(config.floatX)
 u = T.vector('u')
 X = T.matrix('X')
 
-f = function([u,X], T.dot(u,X))
+dot = function([u,X], T.dot(u,X))
 
 t0 = time.time()
 for img, lbl in zip(imgs, lbls):
-    predicha = np.argmax(f(img, w))
+    predicha = np.argmax(dot(img, w))
     if (predicha == lbl):
         w[img > 0,predicha] += lr
     else:
@@ -35,7 +35,7 @@ errores = 0
 
 predichas = []
 for img, lbl in zip(imgsTest, lblsTest):
-    predicha = np.argmax(f(img, w))
+    predicha = np.argmax(dot(img, w))
     predichas.append(predicha)
     if (predicha != lbl):
         errores += 1
