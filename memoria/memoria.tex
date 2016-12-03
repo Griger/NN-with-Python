@@ -140,16 +140,16 @@ A continuación vamos a ver los primeros algoritmo de aprendizaje que vimos en c
     % Draw the input layer nodes
     \foreach \name / \y in {0,1}
     % This is the same as writing \foreach \name / \y in {1/1,2/2,3/3,4/4}
-        \node[entry, pin=left:$pixel_{\y}$] (I-\name) at (0,-\y cm) {};
+        \node[entry, pin=left:$pixel_{\y}$] (I-\name) at (0,-0.5*\y cm) {};
     
-    \node at (-1,-3) {\vdots};
-    \node[entry, pin=left:$pixel_{782}$] (I-782) at (0,-5) {};
-    \node[entry, pin=left:$pixel_{783}$] (I-783) at (0,-6) {};
+    \node at (-1,-0.5*3) {\vdots};
+    \node[entry, pin=left:$pixel_{782}$] (I-782) at (0,-0.5*5) {};
+    \node[entry, pin=left:$pixel_{783}$] (I-783) at (0,-0.5*6) {};
 
     % Draw the hidden layer nodes
     \foreach \name / \y in {0,...,9}
         \path[yshift=0.5cm]
-            node[hidden neuron, pin={[pin edge={->}]right:$salida_{\y}$}] (H-\name) at (\layersep,-\y cm) {};
+            node[hidden neuron, pin={[pin edge={->}]right:$salida_{\y}$}] (H-\name) at (\layersep,-0.5*\y cm) {};
 
     % Connect every node in the input layer with every node in the
     % hidden layer.
@@ -164,23 +164,139 @@ A continuación vamos a ver los primeros algoritmo de aprendizaje que vimos en c
 \end{center}
 
 \subsection{Penalización fija por equivocación (Plantillas 1)}
+\archive{algTemplates1.py}\\
 
-Este algoritmo que lo podemos encontrar en \archive{algTemplates1.py} es muy sencillo, lo que hace es aumentar o disminuir una cantidad fija (\code{lr}) a aquellos pesos de la neurona que ha ganado la votación (que sería aquella tal que el valor $\underset{j = 0}{\overset{28^2-1}{\Sigma}} w_{ij}img_j$, donde $w_{ij}$ es el peso de la neurona i-ésima para el píxel $j$ de la imagen, es el más alto) correspondientes a los píxeles activos de la imagen; aquellos con un valor superior a cero en la imagen.\\
+Este algoritmo es muy sencillo, lo que hace es aumentar o disminuir una cantidad fija (\code{lr}) a aquellos pesos de la neurona que ha ganado la votación (que sería aquella tal que el valor $\underset{j = 0}{\overset{28^2-1}{\Sigma}} w_{ij}img_j$, donde $w_{ij}$ es el peso de la neurona i-ésima para el píxel $j$ de la imagen, es el más alto) correspondientes a los píxeles activos de la imagen; aquellos con un valor superior a cero en la imagen.\\
 
 Hay que señalar que en caso de realizar esta actualización a todos los pesos de la neurona, en lugar de sólo a los activos, entonce el error sería mucho más grande (aprox. un 85\%). Esto se debe a que estamos trabajando con algoritmos que sólo cambian su información de aprendizaje según la imagen que le damos como entrada, entonces si aportamos información a través de pesos correspondientes a píxeles de la imagen que no contenían información, lo único que hacemos es ``confundir'' a la red.
 
 \subsection{Penalización fija y refuerzo de neurona correcta (Plantillas 2)}
+\archive{algTemplates2.py}\\
 
-En este caso es mucho menor el tiempo al ejecutar el cógido en CPU que en GPU (en CPU tadamos menos de 3 segundos y en cambio en GPU tarda algo más de 25), es decir, tal y como está planteado el algoritmo la sobrecarga que supone trasladar la información a la GPU es mayor que el tiempo de ejecución del algoritmo en sí.
+En este caso es mucho menor el tiempo al ejecutar el cógido en CPU que en GPU (en CPU tadamos menos de 3 segundos y en cambio en GPU tarda algo más de 25), es decir, tal y como está planteado el algoritmo la sobrecarga que supone trasladar la información a la GPU es mayor que el tiempo de ejecución del algoritmo en sí.\\
 
-Hay algo que destacar y es que en una primera prueba se había omitido el vector de bias, y el error era ligeramente menor que al incorporarlo. En mi opinión esto se debe a que como estamos trabajando con un sistema de plantillas lo único que hacemos al incorporar este elemento es introducir una información que realmente es ficticia; la actualización de pesos viene sólo dada por los píxeles activos en la imagen de entrada.
+Hay algo que destacar y es que en una primera prueba se había omitido el vector de bias, y el error era ligeramente menor que al incorporarlo. En mi opinión esto se debe a que como estamos trabajando con un sistema de plantillas lo único que hacemos al incorporar este elemento es introducir una información que realmente es ficticia; la actualización de pesos viene sólo dada por los píxeles activos en la imagen de entrada.\\
+
+Este algoritmo mejora sustancialmente al anterior en tasa de error puesto que no sólo se limita a penalizar o compensar a la neurona que dio la salida mayor, la que se consideraría para la clasificación, sino que además en todos los casos se refuerza aquella neurona que debería haber sido la que diese la clase correcta de la imagen.
 
 \subsection{Actualización de pesos según el error (Plantillas 3)}
+\archive{algTemplates3.py}\\
 
 Para este algoritmo nos hemos basado en el siguiente enlace: \url{https://mmlind.github.io/Simple_1-Layer_Neural_Network_for_MNIST_Handwriting_Recognition/}. Lo primero que necesitaremos es algo que también vamos a necesitar cuando pasemos a trabajar con algoritmos de aprendizaje más sofisticados, pasamos de tener las etiquetas representadas por un número entero por tener cada una representada por un array binario que tiene un 1 sólamente en aquella posición correspondiente a la etiqueta. Este código también lo tenemos en el archivo \archive{reader.py} y almacena estas etiquetas en el archivo \archive{data/binTrainLbl.npy}.\\
 
+Este algoritmo pretende contruir una plantilla pero empleando más información que la que usábamos en los dos algoritmo anteriores, ahora el incremento que se le añade a cada peso de la red neuronal es distinto en función del error cometido por la neurona a la que pertenece (diferencia entre el \textit{output} de esa neurona y la que debería ser, modelada por el vector binario anteriormente generado) y la entrada que se introdujo por esa dendríta de la neurona. Con lo cual el cambio que realizamos al peso viene dado según el error cometido y según el peso que tuviese el píxel de esa imagen en la salida de la neurona. Entonces si nos fijamos estamos ante un algoritmo que sólo actualiza los pesos relativos a píxeles activos en la imagen de entrada, como hacían los dos algoritmos anteriores, pero considerando más información que emplear una tasa de aprendizaje fija.
 
+Tanto para este algoritmo como para los dos anteriores, dado que el tiempo de entrenamiento es muy reducido hemos optado por no almacenar los pesos de la red en un archivo para futuros usos, no obstante sí que fijamos la semilla aleatoria al inicio del algoritmo de modo que la inicialización de pesos de las neuronas sea siempre la misma. Se ha probado también a cambiar dicha semilla para asegurar que los resultados obtenidos no se deben al azar de los pesos obtenidos, y se han obtenido resultados muy similares.\\
 
+Además la ejecución de este algoritmo nos ha permitido comprobar que lo que estamos haciendo en cuanto a la codificación de imágenes y las tasas de error calculadas es correcto, ya que obtenemos una tasa de error muy parecida a la que obtiene el desarrollador que ha publicado el algoritmo en el enlace anteriormente mencionado. Vamos ahora a mostrar el código desarrollado a fin de dar algunas ideas sobre la progración con \code{Theano}, que es lo que estamos empleado para las prácticas:\\
+
+\begin{lstlisting}
+import numpy as np
+import time
+import theano.tensor as T
+from theano import function, config, scan, shared
+from constants import *
+
+np.random.seed(12345678)
+
+lr = 0.1
+
+imgs = np.load("data/trainImg.npy")
+lbls = np.load("data/binTrainLbl.npy")
+imgsTest = np.load("data/testImg.npy")
+lblsTest = np.load("data/testLbl.npy")
+
+x = T.vector('x')
+y = T.vector('y')
+A = T.matrix('A')
+
+w = shared(np.random.rand(ROWS*COLS, 10).astype(config.floatX))
+
+out = T.dot(x, w)/(28.0*28.0)
+err = y - out
+gw, aux = scan(lambda scalar,x: scalar * x, sequences=[err], non_sequences=x)
+
+train = function([x, y], err, updates = {w: w + (lr * gw.T)})
+
+#Train
+t0 = time.time()
+for img, lbl in zip(imgs, lbls):
+    train(img, lbl)
+t1 = time.time()
+
+dot = function([x,A], T.dot(x,A))
+#Test
+predicted = []
+nError = 0
+for img, lbl in zip(imgsTest, lblsTest):
+    p = np.argmax(dot(img, w.get_value()))
+    predicted.append(p)
+    if p != lbl:
+        nError += 1
+\end{lstlisting}
+
+Lo primero que observamos es la fijación de la semilla aleatoria y la declaración de la tasa de aprendizaje, \code{lr}, a continuación cargamos todos los datos de la base. Ahora ya encontramos código de Theano, en primer lugar estamos definición unas variables simbólicas que nos servirán como base para definir otras tantas, con estas variables es con las que definimos las funciones Theano que serán compiladas.\\
+
+Así denimos una variable \textit{shared}, \code{w}, que es una matriz $28^2 \mathrm{x} 10$ que representa los pesos de las diferentes neuronas que conforman la única capa de la topología que emplean estos algoritmos. La disponemos de este modo ya que después multiplicaremos un vector fila por ella y con lo cual las dimensiones tienen que ser las adecuadas.\\
+
+A continuación definimos la variable que representará la salida, como vemos esta variable será el resultado de multiplicar el vector, que será la variable de entrada, por cada columna de la matriz, normalizado de modo que la salida quede en el [0,1]. Y definimos el error como un vector que será la diferencia entre el vector esperado, que representa la clase de la imagen de entrada, y la salida obtenida.\\
+
+Ahora vamos a calcular la matriz de incrementos para la matriz de pesos, \code{gw}, esto lo hacemos por medio de la función \code{scan} de Theano que es algo parecido a los bucles de Theano que resultan algo más rápidos que un for usual; se realizó un pequeó experimento y se notó la diferencia de tiempos. Con esto definimos una nueva variable que almacena el resultado de multiplicar la entrada (representada por la variable simbólica \code{x}) por el error de cada una de las neuronas, representado por el vector simbólico \code{err}, que se recorre elemento a elemento y por esto se añada a la lista de \code{sequences} de la función \code{scan}; con la variable aux sólo recogemos el otro elemento devuelto por esta función que no vamos pasar a explicar pues no nos interesa en este momento.\\
+
+Por último definimos una función Theano con el comando \code{function} que recibe como entradas dos vectores, que serán la imagen y el vector binario que codifica la clase, que calcula la variable \code{err} para dichas entradas y actualiza la matriz de pesos, \code{w}, sumándole la matriz de incrementos que se deriva del error multiplicada por la tasa de aprendizaje.\\
+
+Después recorremos en un bucle usual de Python las imágenes de entrenamiento junto con sus vectores binarios de etiquetas y usamos la función que acabamos de definir para ir actualizando los pesos de la matriz según la salida obtenida para estas imágenes. Luego no hacemos más que emplear la red entrenada para obtener la clase que nos da para las imágenes de test, que será la correspondiente a la salida más alta de las diez neuronas (por esto empleamos \code{argmax}) y calculamos el número de errores obtenido. Observemos que también hemos definido una función para calcular el producto de un vector por una matriz con tal propósito.
+
+\section{Backpropagation}
+
+A continuación vamos a pasar a trabajar con neuronas que emplean el \newline mecanismo de propagación hacia atrás para actualizar los pesos de las neuronas que la forman, empezaremos con una red simple con una sola capa oculta y después iremos aumentando la complejidad de la topología de red empleada. Así la topología que tendremos de inicio será la siguiente será la siguiente:
+
+\begin{center}
+\begin{tikzpicture}[shorten >=1pt,->,draw=black!10, node distance=\layersep]
+    \tikzstyle{every pin edge}=[<-,shorten <=1pt]
+    \tikzstyle{neuron}=[circle,fill=black!25,minimum size=10pt,inner sep=0pt]
+    \tikzstyle{input neuron}=[neuron, fill=green!50, minimum size=5pt];
+    \tikzstyle{output neuron}=[neuron, fill=orange!50, minimum size =10pt];
+    \tikzstyle{hidden neuron}=[neuron, fill=gray!50];
+    \tikzstyle{annot} = [text width=4em, text centered]
+
+    % Draw the input layer nodes
+    \foreach \name / \y in {0,1}
+    % This is the same as writing \foreach \name / \y in {1/1,2/2,3/3,4/4}
+        \node[input neuron, pin=left:$pixel_{\y}$] (I-\name) at (0,-0.5*\y cm) {};
+    
+    \node at (0,-0.5*3) {\vdots};
+    \node[input neuron, pin=left:$pixel_{782}$] (I-782) at (0,-0.5*5) {};
+    \node[input neuron, pin=left:$pixel_{783}$] (I-783) at (0,-0.5*6) {};
+
+    % Draw the hidden layer nodes
+    \node at (\layersep,-0.5*3) {\vdots};
+    \foreach \name / \y in {0,1,7,8}
+        \path[yshift=0.5cm]
+            node[hidden neuron] (H-\name) at (\layersep,-0.5*\y cm) {};
+    
+    %Draw output layer nodes  
+    \foreach \name / \y in {0,...,9}
+        \path[yshift=0.5cm]
+            node[output neuron, pin={[pin edge={->}]right:$salida_{\y}$}] (O-\name) at (2*\layersep,-\y*0.5 cm) {};
+
+    % Connect every node in the input layer with every node in the
+    % hidden layer.
+    \foreach \source in {0,1,782,783}
+        \foreach \dest in {0,1,7,8}
+            \path (I-\source) edge (H-\dest);
+
+    % Connect every node in the hidden layer with the output layer
+    \foreach \source in {0,1,7,8}
+    		\foreach \dest in {0,...,9}
+        		\path (H-\source) edge (O-\dest);
+
+    % Annotate the layers
+    \node[annot,above of=H-0, node distance=1cm] (hl) {Capa oculta};
+    \node[annot,left of=hl] {Entradas};
+    \node[annot,right of=hl] {Salidas};
+\end{tikzpicture}
+\end{center}
 
 
 
@@ -220,9 +336,9 @@ Para este algoritmo nos hemos basado en el siguiente enlace: \url{https://mmlind
         \path (H-\source) edge (O);
 
     % Annotate the layers
-    \node[annot,above of=H-1, node distance=1cm] (hl) {Hidden layer};
-    \node[annot,left of=hl] {Input layer};
-    \node[annot,right of=hl] {Output layer};
+    \node[annot,above of=H-1, node distance=1cm] (hl) {Capa oculta};
+    \node[annot,left of=hl] {Entradas};
+    \node[annot,right of=hl] {Salida};
 \end{tikzpicture}
 \end{center}
 
