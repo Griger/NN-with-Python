@@ -22,6 +22,7 @@
 \definecolor{deepred}{rgb}{0.6,0,0}
 \definecolor{deepgreen}{rgb}{0,0.5,0}
 \definecolor{light-gray}{gray}{0.85}
+\definecolor{comment-gray}{gray}{0.65}
 \definecolor{light-green}{rgb}{0.66,1,0.5}
 
 % Default fixed font does not support bold face
@@ -38,7 +39,8 @@
 	emphstyle=\ttb\color{deepred},    % Custom highlighting style
 	stringstyle=\color{deepgreen},
 	frame=tb,                         % Any extra options here
-	showstringspaces=false            % 
+	showstringspaces=false,            % 
+	commentstyle=\ttm\color{comment-gray}, % Custom comment style
 }
 %--------------------------------------------------------------------------------
 
@@ -298,6 +300,71 @@ A continuación vamos a pasar a trabajar con neuronas que emplean el \newline me
 \end{tikzpicture}
 \end{center}
 
+Los experimentos realizados para ajustar los parámetros de la red se han realizado atendiendo a la tasa de error en el conjunto de test. En la práctica deberían hacerse sobre un conjunto de validación, pero para poder emplear todas las muestras de entrenamiento disponibles para entrenar la red hemos optado por esta opción.\\
+
+Gracias a la posibilidad de realizar cálculo simbólico con la libería Theano implementar los algoritmos de este estilo resulta muy sencillo ya que no necesitamos calcular el gradiesnte del error respecto a los distintos pesos de la red neuronal para poder propagar el error. Simplemente tenemos que realizar una declaración de variables simbólicas como la que se muestra en el siguiente framento de código que extraído del archivo \archive{backSoft.py}.
+
+\begin{lstlisting}
+W1 = shared(np.random.normal(loc=0, scale=.1, size=(784, nHidden))
+.astype(config.floatX), name = 'W1')
+b1 = shared(np.random.normal(loc=0, scale=.1, size=nHidden)
+.astype(config.floatX), name = 'b1')
+W2 = shared(np.random.normal(loc=0, scale=.1, size=(nHidden, 10))
+.astype(config.floatX), name = 'W2')
+b2 = shared(np.random.normal(loc=0, scale=.1, size=10)
+.astype(config.floatX), name = 'b2')
+
+
+hid = 1.0 / (1.0 + T.exp(-(T.dot(x, W1) + b1)))
+out = 1.0 / (1.0 + T.exp(-(T.dot(hid, W2) + b2)))
+y_hat = T.nnet.softmax(out)
+err = - T.sum(y * T.log(y_hat))
+prediction = T.argmax(y_hat)
+
+#define gradients
+dW1, db1, dW2, db2 = T.grad(err, [W1, b1, W2, b2])
+\end{lstlisting}
+
+Como podemos ver declaramos diversas variables simbólicas entre las que se encuentran las matrices de pesos de la red, y definimos una variable simbólica \code{err} que representa el error de entropía cruzada, que es la función de coste asociada a una capa de salida de tipo softmax. Finalmente definimos las variables \code{dW1, db1, dW2, db2}, que serán las derivadas de dicho error con respecto a las distintas matrices y vectores de pesos de la red haciendo uso de la función \code{grad} de la biblioteca Theano.
+
+\subsection{Softmax}
+\archive{backSoft.py}\\
+
+Siguiendo los experimentos de los que se hablan en el guión de la práctica hemos implementado en primer lugar el algoritmo de backpropagation haciendo uso de una capa de salida de tipo softmax.\\
+
+Para implementar esta capa de salida hemos hecho uso, como se muetra en el código que hemos mostrado anteriormente, de la función \code{softmax} de Theano. Y hemos de definir el error como el error de entropía cruzada, ya que si por ejemplo definimos el error como el error cuadrático medio la tasa de error aumentará mucho. Además pese a que Theano dispone de una función para calcular este error de entropía cruzada nos daba un error en cuanto al tipo del vector de salidas, con lo cual simplemente hemos definimo nosotros mismos tal error, que como vemos resulta muy cómodo: el opuesto de la sumatoria del producto de cada salida de la red con la salida esperada; hacemos uso de la clase de cada imagen representada por medio de un vector binario.\\
+
+Comenzamos el experimento con una capa oculta con 256 neuronas al igual que en el ejemplo planteado en el guión de la práctica. En un principio empleamos la tangente hiperbólica como función de activación, esto simplemente implica cambiar la declaración de las variables simbólicas que representan la salida de las dos capas de la red:
+
+\begin{lstlisting}
+hid = T.tanh(T.dot(x, W1) + b1)
+out = T.tanh(T.dot(hid, W2) + b2)
+# hid = 1.0 / (1.0 + T.exp(-(T.dot(x, W1) + b1)))
+# out = 1.0 / (1.0 + T.exp(-(T.dot(hid, W2) + b2)))
+\end{lstlisting}
+
+El emplear esta función de activación hace que la tasa de error (9.68\%) sea algo mayor que la obtenida empleando la función logística, con lo cual, al igual que en el experimento del que estamos partiendo, emplearemos la función logística como función de activación para las neuronas de la red. Una vez fijada la función de activación y la de coste hemos pasado a experimentar con el número de neuronas en la capa oculta así como el número de pasadas que realizamos sobre el conjunto de entrenamiento.\\
+
+\begin{center}
+\begin{table}[H]
+\centering
+\caption{Experimentos backpropagation con salida softmax}
+\label{my-label}
+\begin{tabular}{|c|c|c|c|c|c|}
+\hline
+\rowcolor[HTML]{FFFC9E} 
+\textbf{\begin{tabular}[c]{@{}c@{}}Función\\ activación\end{tabular}} & \textbf{Error}   & \textbf{\begin{tabular}[c]{@{}c@{}}Nº neuronas\\ ocultas\end{tabular}} & \textbf{\begin{tabular}[c]{@{}c@{}}Tiempo\\ entrenamiento\\ (s)\end{tabular}} & \textbf{\begin{tabular}[c]{@{}c@{}}Tasa\\ error\\ (\%)\end{tabular}} & \textbf{\begin{tabular}[c]{@{}c@{}}Pasadas\\ al cojunto de \\ entrenamiento\end{tabular}} \\ \hline
+tanh                                                                  & entropía cruzada & 256                                                                    & 14.52                                                                         & 9.68                                                                 & 1                                                                                         \\ \hline
+logística                                                             & entropía cruzada & 256                                                                    & 12.53                                                                         & 7.57                                                                 & 1                                                                                         \\ \hline
+logística                                                             & cuadrático medio & 256                                                                    & 12.75                                                                         & 90.68                                                                & 1                                                                                         \\ \hline
+logística                                                             & entropía cruzada & 700                                                                    & 33.87                                                                         & 8.25                                                                 & 1                                                                                         \\ \hline
+logística                                                             & entropía cruzada & 256                                                                    & 250.19                                                                        & 2.17                                                                 & 20                                                                                        \\ \hline
+logística                                                             & entropía cruzada & 256                                                                    & 570.24                                                                        & 1.91                                                                 & 50                                                                                        \\ \hline
+\end{tabular}
+\end{table}
+\end{center}
+
+
 
 
 
@@ -342,6 +409,7 @@ A continuación vamos a pasar a trabajar con neuronas que emplean el \newline me
 \end{tikzpicture}
 \end{center}
 
+\section{Redes importantes empleadas sobre la base MNIST}
 \section{Resumen de resultados}
 
 \begin{table}[H]
@@ -355,6 +423,7 @@ A continuación vamos a pasar a trabajar con neuronas que emplean el \newline me
 Plantillas 1                               & algTemplates1.py                                                                             & -                                                                                         &                                                                                                   &                                                                                          &                                                                                                  \\ \hline
 Plantillas 2                               & algTemplates2.py                                                                             & -                                                                                         &                                                                                                   &                                                                                          &                                                                                                  \\ \hline
 Plantillas 3                               & algTemplates3.py                                                                             & -                                                                                         &                                                                                                   &                                                                                          &                                                                                                  \\ \hline
+Back +softmax                               & backSoft.py                                                                             & -                                                                                         &                                                                                                   &                                                                                          &                                                                                                  \\ \hline
 \end{tabular}
 \end{table}
 
@@ -364,6 +433,7 @@ Plantillas 3                               & algTemplates3.py                   
 
 \begin{itemize}
 	\item \href{http://deeplearning.net/software/theano/index.html}{Documentación Theano}
+	\item \href{http://www.wildml.com/2015/09/speeding-up-your-neural-network-with-theano-and-the-gpu/}{Usando Theano para implementar backpropagation}
 	\item \url{http://deeplearning.net/tutorial/mlp.html} (no usado)
 \end{itemize}
 
