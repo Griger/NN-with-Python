@@ -36,6 +36,7 @@ prediction = T.argmax(y_hat)
 #define gradients
 dW1, db1, dW2, db2 = T.grad(err, [W1, b1, W2, b2])
 
+salida = function([x], y_hat)
 predict = function([x], prediction)
 train = function([x, y], err,
     updates={
@@ -44,9 +45,18 @@ train = function([x, y], err,
         (W1, W1 - lr * dW1),
         (b2, b2 - lr * db2)})
 
+A = T.matrix('A')
+hidMatrix = 1.0 / (1.0 + T.exp(-(T.dot(A, W1) + b1)))
+outMatrix = 1.0 / (1.0 + T.exp(-(T.dot(hidMatrix, W2) + b2)))
+y_hatMatrix = T.nnet.softmax(outMatrix)
+predictions = T.argmax(y_hatMatrix, axis = 1)
+predictMatrix = function([A], predictions)
+
+
+
 # now do the computations
 t0 = time.time()
-for i in range(50):
+for i in range(1):
     print("Epoch",i)
     for img, lbl, idx in zip(imgs, binLbls, range(NTRAIN)):
         train(img, lbl)
@@ -54,8 +64,10 @@ for i in range(50):
         #     print("Entrenado con", idx, "imagenes")
 t1 = time.time()
 
-print("Tiempo de entrenamiento:", t1-t0)
+print("Training time:", (t1-t0))
+np.savez("weights/"+"backSoft.npz", W1 = W1.get_value(), b1 = b1.get_value(), W2 = W2.get_value(), b2 = b2.get_value())
 
+"""
 nErrorTest = 0
 predictedTest = []
 for img, lbl in zip(imgsTest, lblsTest):
@@ -64,10 +76,15 @@ for img, lbl in zip(imgsTest, lblsTest):
     if p != lbl:
         nErrorTest += 1
 
+print("Test errors:", nErrorTest, "%:", nErrorTest/NTEST*100.0)
+"""
 
+predictedClasses = predictMatrix(imgsTest)
+nErrorTest = NTEST - np.sum(predictedClasses == lblsTest)
 print("Test errors:", nErrorTest, "%:", nErrorTest/NTEST*100.0)
 
 """
+t0 = time.time()
 predictedTrain = []
 nErrorTrain = 0
 for img, lbl in zip(imgs, lbls):
@@ -75,10 +92,16 @@ for img, lbl in zip(imgs, lbls):
     predictedTrain.append(p)
     if p != lbl:
         nErrorTrain += 1
+t1 = time.time()
 
+print("Hemos tardado en calcular el error con un for", (t1-t0))
 print("Train errors:", nErrorTrain, "%:", nErrorTrain/NTRAIN*100)
-algDescription = "Algoritmo con backpropagation en una NN con una capa oculta de\n"
-algDescription += str(nHidden) + "neuronas con función de activación la logística. Y una capa de\n"
-algDescription += "salida tipo softmax"
-saveData(algDescription, predictedTrain, predictedTest, t1-t0, "b1.txt")
 """
+
+nErrorTrain = NTRAIN - np.sum(predictMatrix(imgs) == lbls)
+print("Train errors:", nErrorTrain, "%:", nErrorTrain/NTRAIN*100)
+
+algDescription = "Algoritmo con backpropagation en una NN con una capa oculta de \n"
+algDescription += str(nHidden) + " neuronas con función de activación la logística. Y una capa de\n"
+algDescription += "salida tipo softmax."
+saveData(algDescription, predictMatrix(imgs), predictMatrix(imgsTest), t1-t0, "b1.txt")
