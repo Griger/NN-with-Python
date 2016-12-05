@@ -9,6 +9,7 @@ np.random.seed(12345678)
 
 lr = 0.1
 nHidden = 256
+epochs = 100
 
 imgs = np.load("data/trainImg.npy")
 lbls = np.load("data/trainLbl.npy")
@@ -56,7 +57,7 @@ predictMatrix = function([A], predictions)
 
 # now do the computations
 t0 = time.time()
-for i in range(1):
+for i in range(epochs):
     print("Epoch",i)
     for img, lbl, idx in zip(imgs, binLbls, range(NTRAIN)):
         train(img, lbl)
@@ -103,5 +104,6 @@ print("Train errors:", nErrorTrain, "%:", nErrorTrain/NTRAIN*100)
 
 algDescription = "Algoritmo con backpropagation en una NN con una capa oculta de \n"
 algDescription += str(nHidden) + " neuronas con función de activación la logística. Y una capa de\n"
-algDescription += "salida tipo softmax."
+algDescription += "salida tipo softmax. Usando una tasa de aprenzidaje de" + str(lr) +"\n y dando "
+algDescription += str(epochs) + " al conjunto de train."
 saveData(algDescription, predictMatrix(imgs), predictMatrix(imgsTest), t1-t0, "b1.txt")
