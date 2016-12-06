@@ -47,6 +47,7 @@
 \newcommand{\code}[1]{\sethlcolor{light-gray}\hl{\texttt{#1}}} %Comando para poner código inline
 \newcommand{\archive}[1]{\sethlcolor{light-green}\hl{\texttt{#1}}} %Comando para resaltar nombres de archivos
 \renewcommand\tablename{Tabla} %Cambiar el nombre de las tablas
+\renewcommand\figurename{Figura} %Cambiar el nombre de las tablas
 \renewcommand{\contentsname}{Índice} %Cambiar el nombre de la ToC
 
 \begin{document}
@@ -330,25 +331,40 @@ Como podemos ver declaramos diversas variables simbólicas entre las que se encu
 \subsection{Softmax}
 \archive{backSoft.py}\\
 
-Siguiendo los experimentos de los que se hablan en el guión de la práctica hemos implementado en primer lugar el algoritmo de backpropagation haciendo uso de una capa de salida de tipo softmax.\\
+Siguiendo los experimentos de los que se hablan en el guión de la práctica hemos implementado el algoritmo de backpropagation haciendo uso de una capa de salida de tipo softmax.\\
 
-Para implementar esta capa de salida hemos hecho uso, como se muetra en el código que hemos mostrado anteriormente, de la función \code{softmax} de Theano. Y hemos de definir el error como el error de entropía cruzada, ya que si por ejemplo definimos el error como el error cuadrático medio la tasa de error aumentará mucho. Además pese a que Theano dispone de una función para calcular este error de entropía cruzada nos daba un error en cuanto al tipo del vector de salidas, con lo cual simplemente hemos definimo nosotros mismos tal error, que como vemos resulta muy cómodo: el opuesto de la sumatoria del producto de cada salida de la red con la salida esperada; hacemos uso de la clase de cada imagen representada por medio de un vector binario.\\
+Para implementar esta capa de salida hemos hecho uso, como se muestra en el código que hemos mostrado anteriormente, de la función \code{softmax} de Theano. Y hemos de definir el error como el error de entropía cruzada, ya que si por ejemplo definimos el error como el error cuadrático medio, la tasa de error aumentará mucho. Además pese a que Theano dispone de una función para calcular este error, nos daba un error en cuanto al tipo del vector de salidas, con lo cual simplemente hemos definimo nosotros mismos tal error, que como vemos resulta muy cómodo: el opuesto de la sumatoria del producto de cada salida de la red con la salida esperada; hacemos uso de la clase de cada imagen representada por medio de un vector binario. Los experimentos que hemos realizado sobre este algoritmo se han centrado en modificar el número de neuronas de la capa oculta así como la tasa de aprendizaje a fin de poder ver sus efectos.\\
 
 Comenzamos el experimento con una capa oculta con 256 neuronas al igual que en el ejemplo planteado en el guión de la práctica. En un principio empleamos la tangente hiperbólica como función de activación, esto simplemente implica cambiar la declaración de las variables simbólicas que representan la salida de las dos capas de la red:
 
 \begin{lstlisting}
-hid = T.tanh(T.dot(x, W1) + b1)
-out = T.tanh(T.dot(hid, W2) + b2)
-# hid = 1.0 / (1.0 + T.exp(-(T.dot(x, W1) + b1)))
-# out = 1.0 / (1.0 + T.exp(-(T.dot(hid, W2) + b2)))
+#tanh like activation function
+# hid = T.tanh(T.dot(x, W1) + b1)
+# out = T.tanh(T.dot(hid, W2) + b2)
+
+#sigmoid like activation function
+hid = 1.0 / (1.0 + T.exp(-(T.dot(x, W1) + b1)))
+out = 1.0 / (1.0 + T.exp(-(T.dot(hid, W2) + b2)))
+
+#Lecun recommended tanh like activation function
+# hid = 1.7159 * T.tanh(0.67 * (T.dot(x, W1) + b1) )
+# out = 1.7159 * T.tanh(0.67 * (T.dot(hid, W2) + b2) )
 \end{lstlisting}
 
-El emplear esta función de activación hace que la tasa de error (9.68\%) sea algo mayor que la obtenida empleando la función logística, con lo cual, al igual que en el experimento del que estamos partiendo, emplearemos la función logística como función de activación para las neuronas de la red. Una vez fijada la función de activación y la de coste hemos pasado a experimentar con el número de neuronas en la capa oculta así como el número de pasadas que realizamos sobre el conjunto de entrenamiento.\\
+El emplear esta función de activación hace que la tasa de error (9.68\%) sea algo mayor que la obtenida empleando la función logística, con lo cual, al igual que en el experimento del que estamos partiendo, emplearemos la función logística como función de activación para las neuronas de la red. Una vez fijada la función de activación y la de coste hemos pasado a experimentar con el número de neuronas en la capa oculta así como el número de pasadas que realizamos sobre el conjunto de entrenamiento. También se probó con la tangente hiperbólica con los coeficientes $a$ y $b$ propuestos por Yann Lecun pero también obteníamos un error mayor que el obtenido con la función logística con lo que optamos por ésta.\\
+
+\begin{figure}[H]
+\includegraphics[scale=0.5]{img/tasa.pdf}
+\caption{Comparación de tasas de apredizaje}
+\end{figure}
+
+\subsection{Momentos}
+\archive{backSoftMomentums.py}
 
 \begin{center}
 \begin{table}[H]
 \centering
-\caption{Experimentos backpropagation con salida softmax}
+\caption{Experimentos backpropagation}
 \label{my-label}
 \begin{tabular}{|c|c|c|c|c|c|}
 \hline
@@ -409,7 +425,6 @@ logística                                                             & entrop�
 \end{tikzpicture}
 \end{center}
 
-\section{Redes importantes empleadas sobre la base MNIST}
 \section{Resumen de resultados}
 
 \begin{table}[H]

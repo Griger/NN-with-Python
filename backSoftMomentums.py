@@ -8,7 +8,8 @@ from utils import saveData
 np.random.seed(12345678)
 
 lr = 0.1
-nHidden = 256
+eta = 0.1
+nHidden = 700
 epochs = 100
 
 imgs = np.load("data/trainImg.npy")
@@ -24,17 +25,14 @@ b1 = shared(np.random.normal(loc=0, scale=.1, size=nHidden).astype(config.floatX
 W2 = shared(np.random.normal(loc=0, scale=.1, size=(nHidden, 10)).astype(config.floatX), name = 'W2')
 b2 = shared(np.random.normal(loc=0, scale=.1, size=10).astype(config.floatX), name = 'b2')
 
-#tanh like activation function
-# hid = T.tanh(T.dot(x, W1) + b1)
-# out = T.tanh(T.dot(hid, W2) + b2)
+prevDeltaW1 = shared(np.zeros((784, nHidden), dtype = config.floatX), name = 'prevDeltaW1')
+prevDeltab1 = shared(np.zeros(nHidden, dtype = config.floatX), name = 'prevDeltab1')
+prevDeltaW2 = shared(np.zeros((nHidden, 10), dtype = config.floatX), name = 'prevDeltaW2')
+prevDeltab2 = shared(np.zeros(10, dtype = config.floatX), name = 'prevDeltab2')
 
 #sigmoid like activation function
-# hid = 1.0 / (1.0 + T.exp(-(T.dot(x, W1) + b1)))
-# out = 1.0 / (1.0 + T.exp(-(T.dot(hid, W2) + b2)))
-
-#Lecun recommended tanh like activation function
-hid = 1.7159 * T.tanh(0.67 * (T.dot(x, W1) + b1) )
-out = 1.7159 * T.tanh(0.67 * (T.dot(hid, W2) + b2) )
+hid = 1.0 / (1.0 + T.exp(-(T.dot(x, W1) + b1)))
+out = 1.0 / (1.0 + T.exp(-(T.dot(hid, W2) + b2)))
 
 y_hat = T.nnet.softmax(out)
 #err = 0.5 * T.sum(y - y_hat) ** 2 #mean square error
@@ -48,10 +46,14 @@ salida = function([x], y_hat)
 predict = function([x], prediction)
 train = function([x, y], err,
     updates={
-        (W2, W2 - lr * dW2),
-        (b1, b1 - lr * db1),
-        (W1, W1 - lr * dW1),
-        (b2, b2 - lr * db2)})
+        (W2, W2 - lr * dW2 - eta * prevDeltaW2),
+        (b1, b1 - lr * db1 - eta * prevDeltab1),
+        (W1, W1 - lr * dW1 - eta * prevDeltaW1),
+        (b2, b2 - lr * db2 - eta * prevDeltab2),
+        (prevDeltab2, db2),
+        (prevDeltaW1, dW1),
+        (prevDeltaW2, dW2),
+        (prevDeltab1, db1)})
 
 A = T.matrix('A')
 hidMatrix = 1.0 / (1.0 + T.exp(-(T.dot(A, W1) + b1)))
@@ -75,20 +77,8 @@ for i in range(epochs):
         nErrorTest = NTEST - np.sum(predictedClasses == lblsTest)
         print("Test errors:", nErrorTest, "%:", nErrorTest/NTEST*100.0)
         cadenaTest += str(nErrorTest/NTEST*100.0) + ","
-        np.savez("weights/"+"backSoftwithLecunActFunLR"+str(lr)+"EPOCH"+str(i)+"NHID"+str(nHidden)+".npz", W1 = W1.get_value(), b1 = b1.get_value(), W2 = W2.get_value(), b2 = b2.get_value())
+        np.savez("weights/"+"backSoftwithMomentums"+str(lr)+"EPOCH"+str(i)+"NHID"+str(nHidden)+"ETA"+str(eta)+".npz", W1 = W1.get_value(), b1 = b1.get_value(), W2 = W2.get_value(), b2 = b2.get_value())
 t1 = time.time()
-
-"""
-nErrorTest = 0
-predictedTest = []
-for img, lbl in zip(imgsTest, lblsTest):
-    p = predict(img)
-    predictedTest.append(p)
-    if p != lbl:
-        nErrorTest += 1
-
-print("Test errors:", nErrorTest, "%:", nErrorTest/NTEST*100.0)
-"""
 
 predictedClasses = predictMatrix(imgsTest)
 nErrorTest = NTEST - np.sum(predictedClasses == lblsTest)
@@ -99,26 +89,11 @@ print(cadenaTest)
 print("Training time:", (t1-t0))
 np.savez("weights/"+"backSoft.npz", W1 = W1.get_value(), b1 = b1.get_value(), W2 = W2.get_value(), b2 = b2.get_value())
 
-"""
-t0 = time.time()
-predictedTrain = []
-nErrorTrain = 0
-for img, lbl in zip(imgs, lbls):
-    p = predict(img)
-    predictedTrain.append(p)
-    if p != lbl:
-        nErrorTrain += 1
-t1 = time.time()
-
-print("Hemos tardado en calcular el error con un for", (t1-t0))
-print("Train errors:", nErrorTrain, "%:", nErrorTrain/NTRAIN*100)
-"""
-
 nErrorTrain = NTRAIN - np.sum(predictMatrix(imgs) == lbls)
 print("Train errors:", nErrorTrain, "%:", nErrorTrain/NTRAIN*100)
 
 algDescription = "Algoritmo con backpropagation en una NN con una capa oculta de \n"
-algDescription += str(nHidden) + " neuronas con función de activación la tanh de Lecun. Y una capa de\n"
+algDescription += str(nHidden) + " neuronas con función de activación sigmoidal. Y una capa de\n"
 algDescription += "salida tipo softmax. Usando una tasa de aprenzidaje de" + str(lr) +"\n y dando "
-algDescription += str(epochs) + " al conjunto de train."
-saveData(algDescription, predictMatrix(imgs), predictMatrix(imgsTest), t1-t0, "b1withLeCunActFun.txt")
+algDescription += str(epochs) + " al conjunto de train y momentos."
+saveData(algDescription, predictMatrix(imgs), predictMatrix(imgsTest), t1-t0, "b1withMomentumsLR"+str(lr)+"EPOCH"+str(epochs)+"NHID"+str(nHidden)+"ETA"+str(eta)+".txt")

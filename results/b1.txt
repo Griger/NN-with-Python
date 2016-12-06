@@ -2,7 +2,7 @@ Algorithm: Algoritmo con backpropagation en una NN con una capa oculta de
 256 neuronas con función de activación la logística. Y una capa de
 salida tipo softmax. Usando una tasa de aprenzidaje de0.1
  y dando 100 al conjunto de train.
-Training time: 1176.2916796207428
+Training time: 1161.9642601013184
 Train error rate: 0.53
 Test error rate: 1.82
 Predicted test labels:
