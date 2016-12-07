@@ -9,7 +9,7 @@ np.random.seed(12345678)
 
 lr = 0.1
 eta = 0.1
-nHidden = 700
+nHidden = 256
 epochs = 100
 
 imgs = np.load("data/trainImg.npy")
@@ -66,28 +66,29 @@ predictMatrix = function([A], predictions)
 
 # now do the computations
 t0 = time.time()
-cadenaTest = "c("
+#cadenaTest = "c("
 for i in range(epochs):
     print("Epoch",i)
     for img, lbl, idx in zip(imgs, binLbls, range(NTRAIN)):
         train(img, lbl)
-    if (i % 5 == 0):
-        print("Ya van:", i, " epochs.")
-        predictedClasses = predictMatrix(imgsTest)
-        nErrorTest = NTEST - np.sum(predictedClasses == lblsTest)
-        print("Test errors:", nErrorTest, "%:", nErrorTest/NTEST*100.0)
-        cadenaTest += str(nErrorTest/NTEST*100.0) + ","
-        np.savez("weights/"+"backSoftwithMomentums"+str(lr)+"EPOCH"+str(i)+"NHID"+str(nHidden)+"ETA"+str(eta)+".npz", W1 = W1.get_value(), b1 = b1.get_value(), W2 = W2.get_value(), b2 = b2.get_value())
+    # if (i % 5 == 0):
+    #     print("Ya van:", i, " epochs.")
+    #     predictedClasses = predictMatrix(imgsTest)
+    #     nErrorTest = NTEST - np.sum(predictedClasses == lblsTest)
+    #     print("Test errors:", nErrorTest, "%:", nErrorTest/NTEST*100.0)
+    #     cadenaTest += str(nErrorTest/NTEST*100.0) + ","
+    #     np.savez("weights/"+"backSoftwithMomentums"+str(lr)+"EPOCH"+str(i)+"NHID"+str(nHidden)+"ETA"+str(eta)+".npz", W1 = W1.get_value(), b1 = b1.get_value(), W2 = W2.get_value(), b2 = b2.get_value())
 t1 = time.time()
 
 predictedClasses = predictMatrix(imgsTest)
 nErrorTest = NTEST - np.sum(predictedClasses == lblsTest)
 print("Test errors:", nErrorTest, "%:", nErrorTest/NTEST*100.0)
 
-cadenaTest += str(nErrorTest/NTEST*100.0) + ")"
-print(cadenaTest)
+# cadenaTest += str(nErrorTest/NTEST*100.0) + ")"
+# print(cadenaTest)
 print("Training time:", (t1-t0))
-np.savez("weights/"+"backSoft.npz", W1 = W1.get_value(), b1 = b1.get_value(), W2 = W2.get_value(), b2 = b2.get_value())
+fileName = "backSoftwithMomentumsLR"+str(lr)+"EPOCH"+str(epochs)+"NHID"+str(nHidden)+"ETA"+str(eta)+".npz"
+np.savez("weights/"+fileName, W1 = W1.get_value(), b1 = b1.get_value(), W2 = W2.get_value(), b2 = b2.get_value())
 
 nErrorTrain = NTRAIN - np.sum(predictMatrix(imgs) == lbls)
 print("Train errors:", nErrorTrain, "%:", nErrorTrain/NTRAIN*100)
@@ -95,5 +96,5 @@ print("Train errors:", nErrorTrain, "%:", nErrorTrain/NTRAIN*100)
 algDescription = "Algoritmo con backpropagation en una NN con una capa oculta de \n"
 algDescription += str(nHidden) + " neuronas con función de activación sigmoidal. Y una capa de\n"
 algDescription += "salida tipo softmax. Usando una tasa de aprenzidaje de" + str(lr) +"\n y dando "
-algDescription += str(epochs) + " al conjunto de train y momentos."
+algDescription += str(epochs) + " al conjunto de train, usando además momentos con una tasa de" + str(eta)
 saveData(algDescription, predictMatrix(imgs), predictMatrix(imgsTest), t1-t0, "b1withMomentumsLR"+str(lr)+"EPOCH"+str(epochs)+"NHID"+str(nHidden)+"ETA"+str(eta)+".txt")

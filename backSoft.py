@@ -29,12 +29,12 @@ b2 = shared(np.random.normal(loc=0, scale=.1, size=10).astype(config.floatX), na
 # out = T.tanh(T.dot(hid, W2) + b2)
 
 #sigmoid like activation function
-# hid = 1.0 / (1.0 + T.exp(-(T.dot(x, W1) + b1)))
-# out = 1.0 / (1.0 + T.exp(-(T.dot(hid, W2) + b2)))
+hid = 1.0 / (1.0 + T.exp(-(T.dot(x, W1) + b1)))
+out = 1.0 / (1.0 + T.exp(-(T.dot(hid, W2) + b2)))
 
 #Lecun recommended tanh like activation function
-hid = 1.7159 * T.tanh(0.67 * (T.dot(x, W1) + b1) )
-out = 1.7159 * T.tanh(0.67 * (T.dot(hid, W2) + b2) )
+# hid = 1.7159 * T.tanh(0.67 * (T.dot(x, W1) + b1) )
+# out = 1.7159 * T.tanh(0.67 * (T.dot(hid, W2) + b2) )
 
 y_hat = T.nnet.softmax(out)
 #err = 0.5 * T.sum(y - y_hat) ** 2 #mean square error

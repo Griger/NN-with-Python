@@ -252,7 +252,7 @@ Después recorremos en un bucle usual de Python las imágenes de entrenamiento j
 
 \section{Backpropagation}
 
-A continuación vamos a pasar a trabajar con neuronas que emplean el \newline mecanismo de propagación hacia atrás para actualizar los pesos de las neuronas que la forman, empezaremos con una red simple con una sola capa oculta y después iremos aumentando la complejidad de la topología de red empleada. Así la topología que tendremos de inicio será la siguiente será la siguiente:
+A continuación vamos a pasar a trabajar con neuronas que emplean el \newline mecanismo de propagación hacia atrás para actualizar los pesos de las neuronas que la forman, tendremos una red muy simple con una sola capa oculta. Así la topología que tendremos de inicio será la siguiente será la siguiente:
 
 \begin{center}
 \begin{tikzpicture}[shorten >=1pt,->,draw=black!10, node distance=\layersep]
@@ -333,7 +333,7 @@ Como podemos ver declaramos diversas variables simbólicas entre las que se encu
 
 Siguiendo los experimentos de los que se hablan en el guión de la práctica hemos implementado el algoritmo de backpropagation haciendo uso de una capa de salida de tipo softmax.\\
 
-Para implementar esta capa de salida hemos hecho uso, como se muestra en el código que hemos mostrado anteriormente, de la función \code{softmax} de Theano. Y hemos de definir el error como el error de entropía cruzada, ya que si por ejemplo definimos el error como el error cuadrático medio, la tasa de error aumentará mucho. Además pese a que Theano dispone de una función para calcular este error, nos daba un error en cuanto al tipo del vector de salidas, con lo cual simplemente hemos definimo nosotros mismos tal error, que como vemos resulta muy cómodo: el opuesto de la sumatoria del producto de cada salida de la red con la salida esperada; hacemos uso de la clase de cada imagen representada por medio de un vector binario. Los experimentos que hemos realizado sobre este algoritmo se han centrado en modificar el número de neuronas de la capa oculta así como la tasa de aprendizaje a fin de poder ver sus efectos.\\
+Para implementar esta capa de salida hemos hecho uso, como se muestra en el código que hemos mostrado anteriormente, de la función \code{softmax} de Theano. También hemos de definir el error como el error de entropía cruzada, ya que si por ejemplo definimos el error como el error cuadrático medio, la tasa de error aumentará mucho. Además pese a que Theano dispone de una función para calcular este error, nos daba un error en cuanto al tipo del vector de salidas, con lo cual simplemente hemos definido nosotros mismos tal error, que como vemos resulta muy cómodo: el opuesto de la sumatoria del producto de cada salida de la red con la salida esperada; hacemos uso de la clase de cada imagen representada por medio de un vector binario. Los experimentos que hemos realizado sobre este algoritmo se han centrado en modificar el número de neuronas de la capa oculta así como la tasa de aprendizaje a fin de poder ver sus efectos.\\
 
 Comenzamos el experimento con una capa oculta con 256 neuronas al igual que en el ejemplo planteado en el guión de la práctica. En un principio empleamos la tangente hiperbólica como función de activación, esto simplemente implica cambiar la declaración de las variables simbólicas que representan la salida de las dos capas de la red:
 
@@ -353,13 +353,23 @@ out = 1.0 / (1.0 + T.exp(-(T.dot(hid, W2) + b2)))
 
 El emplear esta función de activación hace que la tasa de error (9.68\%) sea algo mayor que la obtenida empleando la función logística, con lo cual, al igual que en el experimento del que estamos partiendo, emplearemos la función logística como función de activación para las neuronas de la red. Una vez fijada la función de activación y la de coste hemos pasado a experimentar con el número de neuronas en la capa oculta así como el número de pasadas que realizamos sobre el conjunto de entrenamiento. También se probó con la tangente hiperbólica con los coeficientes $a$ y $b$ propuestos por Yann Lecun pero también obteníamos un error mayor que el obtenido con la función logística con lo que optamos por ésta.\\
 
+Los primeros experimentos se realizaron dando una única pasada al conjunto de entrenamiento. Al probar aumentar el número de neuronas en la capa oculta fue desconcertante el encontrar una tasa de error más alta que en el caso de tener únicamente 256 neuronas. Sin embargo cuando se realizó un experimento más extenso al dar hasta 100 pasadas al conjunto de entrenamiento, mostrando la tasa de error sobre el conjunto de test cada 5 pasadas los resultados fueron más lógicos.\\
+
+Como podemos ver el hecho de aumentar el número de neuronas en la capa oculta hace que, a partir de un cierto número de pasadas, el error de la red con más neuronas ocultas se menor que el de la red más pequeña. Con lo que se pone de manifiesto que la red aprende mejor con más capas pero que necesita de más pasadas para tener una información que efectivamente sea útil. Cabe señalar que se realiza un proceso de aprendizaje online, actualizando los pesos cada vez que se le pasa una muestra a la red, he optado por esta opción ya que en las transparencias de teoría se informaba de que tal proceso solía dar mejores soluciones que el aprendizaje por mini-lotes.
+
+\begin{figure}[H]
+\includegraphics[scale=0.5]{img/cantidad.pdf}
+\caption{Comparación de tasas de apredizaje}
+\end{figure}
+
+Lo que podemos apreciar también en los experimentos anteriores es, además del mayor tiempo requerido para el entrenamiento de una red con una capa oculta de mayor tamaño, es un ligero sobreaprendizaje, pero prácticamente inexistente, además en algunas pasadas posteriores la tasa de error en test vuelve a disminuir, con lo que realmente no podemos achacar este aumento del error a un sobreajuste. Sí es cierto que en los experimentos realizados a posteriori sobre la tasa de aprendizaje se aprecia que con un tasa de 0.01 el error siempre disminuye, pero de una forma mucho más lenta que con una tasa de 0.1. Debido a que, para la topologías estudiadas, no se ha apreciado un sobreajuste reseñable no se han incluido factores de regularización.\\
+
+Por otro lado también se hizo una prueba para cambiar la tasa de aprendizaje a fin de comprobar si con una tasa más reducida el aprendizaje no aqueja el pequeño sobreajuste que experimentamos en los experimentos anteriores. En cambio lo que se observó es que, para el mismo número de pasadas, y con una capa oculta de 700 neuronas, el aprendizaje resultaba demasiado lento con una tasa menor, con lo que se empobrecían los resultados obtenidos. Esto puede apreciarse en la siguiente gráfica comparativa:
+
 \begin{figure}[H]
 \includegraphics[scale=0.5]{img/tasa.pdf}
 \caption{Comparación de tasas de apredizaje}
 \end{figure}
-
-\subsection{Momentos}
-\archive{backSoftMomentums.py}
 
 \begin{center}
 \begin{table}[H]
@@ -379,6 +389,28 @@ logística                                                             & entrop�
 \end{tabular}
 \end{table}
 \end{center}
+
+\subsection{Momentos}
+\archive{backSoftMomentums.py}
+
+\begin{figure}[H]
+\includegraphics[scale=0.5]{img/momentos.pdf}
+\caption{Comparación de tasas de apredizaje}
+\end{figure}
+
+\begin{table}[H]
+\caption{Experimentos con momentos}
+\begin{tabular}{|c|c|c|c|c|c|}
+\hline
+\rowcolor[HTML]{FFFC9E} 
+\textbf{\begin{tabular}[c]{@{}c@{}}Nº neuronas\\ ocultas\end{tabular}} & \textbf{\begin{tabular}[c]{@{}c@{}}Pasadas\\ al conjunto\end{tabular}} & \textbf{\begin{tabular}[c]{@{}c@{}}Tasa\\ aprendizaje\end{tabular}} & \textbf{\begin{tabular}[c]{@{}c@{}}Tasa\\ momentos\end{tabular}} & \textbf{\begin{tabular}[c]{@{}c@{}}Tasa\\ error\\ (\%)\end{tabular}} & \textbf{\begin{tabular}[c]{@{}c@{}}Tiempo\\ entranamineto\\ (s)\end{tabular}} \\ \hline
+256                                                                    & 76                                                                     & 0.05                                                                & 0.05                                                             & 1.81                                                                 & 2003.057                                                                      \\ \hline
+256                                                                    & 100                                                                    & 0.1                                                                 & 0.1                                                              & 1.72                                                                 & 2679.87                                                                       \\ \hline
+700                                                                    & 66                                                                     & 0.1                                                                 & 0.1                                                              & 1.6                                                                  & 5308.86                                                                       \\ \hline
+\end{tabular}
+\end{table}
+
+
 
 
 
