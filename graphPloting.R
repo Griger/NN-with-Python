@@ -27,3 +27,11 @@ momentums <- momentums + geom_point(aes(y = test0.05256eta0.05, color="n = 256, 
 momentums <- momentums + geom_point(aes(y = test0.1256eta0.1, color="n = 256, lr = 0.1, mr = 0.1")) + geom_line(aes(y = test0.1256eta0.1, color="n = 256, lr = 0.1, mr = 0.1"))
 momentums <- momentums + geom_point(aes(y = test0.1700eta0.1, color="n = 700, lr = 0.1, mr = 0.1")) + geom_line(aes(y = test0.1700eta0.1, color="n = 700, lr = 0.1, mr = 0.1"))
 momentums <- momentums + labs(color = 'configuración') + ylab('tasa de error en test (%)') + xlab('pasadas al conjunto')
+
+#Rates comparation
+rates = c(0.01, 0.02, 0.05, 0.1, 0.2, 0.3, 0.5, 0.7, 1)
+errorRates = c(6.3, 4.8, 3.26, 2.53, 2.31, 2.19, 2.29, 2.33, 3.07)
+
+p <- ggplot(NULL, aes(rates))
+p <- p + geom_point(aes(y = errorRates, colour = "blue")) + geom_line(aes(y = errorRates, colour = "blue")) + ylab('tasa de error en test (%)') + xlab('tasa de aprendizaje')
+p <- p + scale_color_manual(values=c("#CC6666"), guide = FALSE, labels = rates)

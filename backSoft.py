@@ -61,58 +61,20 @@ predictions = T.argmax(y_hatMatrix, axis = 1)
 predictMatrix = function([A], predictions)
 
 
-
-# now do the computations
+# train the NN
 t0 = time.time()
-cadenaTest = "c("
 for i in range(epochs):
     print("Epoch",i)
     for img, lbl, idx in zip(imgs, binLbls, range(NTRAIN)):
         train(img, lbl)
-    if (i % 5 == 0):
-        print("Ya van:", i, " epochs.")
-        predictedClasses = predictMatrix(imgsTest)
-        nErrorTest = NTEST - np.sum(predictedClasses == lblsTest)
-        print("Test errors:", nErrorTest, "%:", nErrorTest/NTEST*100.0)
-        cadenaTest += str(nErrorTest/NTEST*100.0) + ","
-        np.savez("weights/"+"backSoftwithLecunActFunLR"+str(lr)+"EPOCH"+str(i)+"NHID"+str(nHidden)+".npz", W1 = W1.get_value(), b1 = b1.get_value(), W2 = W2.get_value(), b2 = b2.get_value())
 t1 = time.time()
-
-"""
-nErrorTest = 0
-predictedTest = []
-for img, lbl in zip(imgsTest, lblsTest):
-    p = predict(img)
-    predictedTest.append(p)
-    if p != lbl:
-        nErrorTest += 1
-
-print("Test errors:", nErrorTest, "%:", nErrorTest/NTEST*100.0)
-"""
 
 predictedClasses = predictMatrix(imgsTest)
 nErrorTest = NTEST - np.sum(predictedClasses == lblsTest)
 print("Test errors:", nErrorTest, "%:", nErrorTest/NTEST*100.0)
 
-cadenaTest += str(nErrorTest/NTEST*100.0) + ")"
-print(cadenaTest)
 print("Training time:", (t1-t0))
 np.savez("weights/"+"backSoft.npz", W1 = W1.get_value(), b1 = b1.get_value(), W2 = W2.get_value(), b2 = b2.get_value())
-
-"""
-t0 = time.time()
-predictedTrain = []
-nErrorTrain = 0
-for img, lbl in zip(imgs, lbls):
-    p = predict(img)
-    predictedTrain.append(p)
-    if p != lbl:
-        nErrorTrain += 1
-t1 = time.time()
-
-print("Hemos tardado en calcular el error con un for", (t1-t0))
-print("Train errors:", nErrorTrain, "%:", nErrorTrain/NTRAIN*100)
-"""
 
 nErrorTrain = NTRAIN - np.sum(predictMatrix(imgs) == lbls)
 print("Train errors:", nErrorTrain, "%:", nErrorTrain/NTRAIN*100)

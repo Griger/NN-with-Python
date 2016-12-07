@@ -364,7 +364,14 @@ Como podemos ver el hecho de aumentar el número de neuronas en la capa oculta h
 
 Lo que podemos apreciar también en los experimentos anteriores es, además del mayor tiempo requerido para el entrenamiento de una red con una capa oculta de mayor tamaño, es un ligero sobreaprendizaje, pero prácticamente inexistente, además en algunas pasadas posteriores la tasa de error en test vuelve a disminuir, con lo que realmente no podemos achacar este aumento del error a un sobreajuste. Sí es cierto que en los experimentos realizados a posteriori sobre la tasa de aprendizaje se aprecia que con un tasa de 0.01 el error siempre disminuye, pero de una forma mucho más lenta que con una tasa de 0.1. Debido a que, para la topologías estudiadas, no se ha apreciado un sobreajuste reseñable no se han incluido factores de regularización.\\
 
-Por otro lado también se hizo una prueba para cambiar la tasa de aprendizaje a fin de comprobar si con una tasa más reducida el aprendizaje no aqueja el pequeño sobreajuste que experimentamos en los experimentos anteriores. En cambio lo que se observó es que, para el mismo número de pasadas, y con una capa oculta de 700 neuronas, el aprendizaje resultaba demasiado lento con una tasa menor, con lo que se empobrecían los resultados obtenidos. Esto puede apreciarse en la siguiente gráfica comparativa:
+Por otro lado también se hizo una prueba para cambiar la tasa de aprendizaje a fin de comprobar si con una tasa más reducida el aprendizaje no aqueja el pequeño sobreajuste que experimentamos en los experimentos anteriores. En cambio lo que se observó es que, para el mismo número de pasadas, y con una capa oculta de 700 neuronas, el aprendizaje resultaba demasiado lento con una tasa menor, con lo que se empobrecían los resultados obtenidos. Por otro lado también observamos el efecto de diversas tasas de aprendizaje con una capa oculta de 256 neuronas dando 10 pasadas al conjunto de aprendizaje. Aquí también se vimos tanto un aprendizaje peor cuando la tasa es demasiado pequeña y un sobreajuste cuando la tasa es demasiado grande.
+
+Esto puede apreciarse en las dos siguientes gráficas comparativas:
+
+\begin{figure}[H]
+\includegraphics[scale=0.5]{img/tasas.pdf}
+\caption{Comparación de tasas de apredizaje}
+\end{figure}
 
 \begin{figure}[H]
 \includegraphics[scale=0.5]{img/tasa.pdf}
@@ -394,7 +401,7 @@ logística                                                             & entrop�
 \archive{backSoftMomentums.py}
 
 \begin{figure}[H]
-\includegraphics[scale=0.5]{img/momentos.pdf}
+\includegraphics[scale=0.6]{img/momentos.pdf}
 \caption{Comparación de tasas de apredizaje}
 \end{figure}
 

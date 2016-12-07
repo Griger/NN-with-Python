@@ -62,30 +62,18 @@ y_hatMatrix = T.nnet.softmax(outMatrix)
 predictions = T.argmax(y_hatMatrix, axis = 1)
 predictMatrix = function([A], predictions)
 
-
-
-# now do the computations
+# train the NN
 t0 = time.time()
-#cadenaTest = "c("
 for i in range(epochs):
     print("Epoch",i)
     for img, lbl, idx in zip(imgs, binLbls, range(NTRAIN)):
         train(img, lbl)
-    # if (i % 5 == 0):
-    #     print("Ya van:", i, " epochs.")
-    #     predictedClasses = predictMatrix(imgsTest)
-    #     nErrorTest = NTEST - np.sum(predictedClasses == lblsTest)
-    #     print("Test errors:", nErrorTest, "%:", nErrorTest/NTEST*100.0)
-    #     cadenaTest += str(nErrorTest/NTEST*100.0) + ","
-    #     np.savez("weights/"+"backSoftwithMomentums"+str(lr)+"EPOCH"+str(i)+"NHID"+str(nHidden)+"ETA"+str(eta)+".npz", W1 = W1.get_value(), b1 = b1.get_value(), W2 = W2.get_value(), b2 = b2.get_value())
 t1 = time.time()
 
 predictedClasses = predictMatrix(imgsTest)
 nErrorTest = NTEST - np.sum(predictedClasses == lblsTest)
 print("Test errors:", nErrorTest, "%:", nErrorTest/NTEST*100.0)
 
-# cadenaTest += str(nErrorTest/NTEST*100.0) + ")"
-# print(cadenaTest)
 print("Training time:", (t1-t0))
 fileName = "backSoftwithMomentumsLR"+str(lr)+"EPOCH"+str(epochs)+"NHID"+str(nHidden)+"ETA"+str(eta)+".npz"
 np.savez("weights/"+fileName, W1 = W1.get_value(), b1 = b1.get_value(), W2 = W2.get_value(), b2 = b2.get_value())
