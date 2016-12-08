@@ -44,6 +44,27 @@ def readImages (filename):
 
     return normImages
 
+def readMtxImages (filename):
+        file = gzip.GzipFile(filename, 'rb')
+        magicNumber = readInt(file)
+        nImages = readInt(file)
+        rows = readInt(file)
+        cols = readInt(file)
+
+        imageLimit = nImages
+        images = np.zeros((imageLimit, rows, cols), dtype = config.floatX)
+
+        #Load images
+        for i in range(imageLimit):
+            for j in range(rows):
+                for k in range(cols):
+                    images[i,j,k] = readUnsignedByte(file)
+
+        #Normalize images
+        normImages = np.apply_along_axis(normalizeImage, 0, images)
+
+        return normImages
+
 def readLabels (filename):
     file = gzip.GzipFile(filename, 'rb')
     magicNumber = readInt(file)
@@ -74,15 +95,20 @@ def printFormattedImage (image):
         print("")
 
 #Load images and labels from DB files
-images = readImages("mnist.data/"+"train-images-idx3-ubyte.gz")
-labels = readLabels("mnist.data/"+"train-labels-idx1-ubyte.gz")
-binLabels = labelsToBinary(labels)
-imagesTest = readImages("mnist.data/"+"t10k-images-idx3-ubyte.gz")
-labelsTest = readLabels("mnist.data/"+"t10k-labels-idx1-ubyte.gz")
+# images = readImages("mnist.data/"+"train-images-idx3-ubyte.gz")
+# labels = readLabels("mnist.data/"+"train-labels-idx1-ubyte.gz")
+# binLabels = labelsToBinary(labels)
+# imagesTest = readImages("mnist.data/"+"t10k-images-idx3-ubyte.gz")
+# labelsTest = readLabels("mnist.data/"+"t10k-labels-idx1-ubyte.gz")
+
+imagesMtx = readMtxImages("mnist.data/"+"train-images-idx3-ubyte.gz")
+imagesMtxTest = readMtxImages("mnist.data/"+"t10k-images-idx3-ubyte.gz")
 
 #Save loaded images and labels
-np.save("data/"+"trainImg.npy", images)
-np.save("data/"+"trainLbl.npy", labels)
-np.save("data/"+"testImg.npy", imagesTest)
-np.save("data/"+"testLbl.npy", labelsTest)
-np.save("data/"+"binTrainLbl.npy", binLabels)
+# np.save("data/"+"trainImg.npy", images)
+# np.save("data/"+"trainLbl.npy", labels)
+# np.save("data/"+"testImg.npy", imagesTest)
+# np.save("data/"+"testLbl.npy", labelsTest)
+# np.save("data/"+"binTrainLbl.npy", binLabels)
+np.save("data/"+"trainMtxImg.npy", imagesMtx)
+np.save("data/"+"testMtxImg.npy", imagesMtxTest)
