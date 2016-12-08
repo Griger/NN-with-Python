@@ -78,7 +78,7 @@ params = layer3.params + layer2.params + layer1.params + layer0.params
 grads = T.grad(err, params)
 
 lr = 0.1
-epochs = 100
+epochs = 41
 
 updates = [(param_i, param_i - lr * grad_i) for param_i, grad_i in zip(params, grads)]
 
@@ -90,22 +90,49 @@ train = function([index], err, updates = updates,
 
 predict = function([x], prediction)
 
-print("una prediccion", predict(imgs.get_value()[0]))
-
+t0 = time.time()
 for i in range(epochs):
     print("Epoch",i)
-    t0 = time.time()
+
     for j in range(NTRAIN):
         train(j)
-    t1 = time.time()
-    print("Tiempo invertido en una epoch:", (t1-t0))
-    if (i % 5 == 0):
-        errors = 0
-        print("Ya van", i, "epochs.")
-        for img, lbl in zip(imgsTest.get_value(), lblsTest.get_value()):
-            if (predict(img) != lbl):
-                errors += 1
-        print("Errores:", errors, "Tasa:", errors*100.0/NTEST)
+    # print("Tiempo invertido en una epoch:", (t1-t0))
+    # if (i % 5 == 0):
+    #     errors = 0
+    #     print("Ya van", i, "epochs.")
+    #     for img, lbl in zip(imgsTest.get_value(), lblsTest.get_value()):
+    #         if (predict(img) != lbl):
+    #             errors += 1
+    #     print("Errores:", errors, "Tasa:", errors*100.0/NTEST)
+t1 = time.time()
 
-filename = "convolutional"
-np.savez("weights/"+fileName, W0 = layer0.W.get_value(), b0 = layer0.b.get_value(), W1 = layer1.W.get_value(), b1 = layer1.b.get_value(), W2 = layer2.W.get_value(), b2 = layer2.b.get_value(), W3 = layer3.W.get_value(), b3 = layer3.b.get_value())
+print("Training time", (t1-t0))
+filename = "basicconvolutional256"
+np.savez("weights/"+filename, W0 = layer0.W.get_value(), b0 = layer0.b.get_value(), W1 = layer1.W.get_value(), b1 = layer1.b.get_value(), W2 = layer2.W.get_value(), b2 = layer2.b.get_value(), W3 = layer3.W.get_value(), b3 = layer3.b.get_value())
+
+errors = 0
+predictedTest = []
+for img, lbl in zip(imgsTest.get_value(), lblsTest.get_value()):
+        p = predict(img)
+        predictedTest.append(p)
+        if (p != lbl):
+            errors += 1
+
+print("Test errors:", errors, "Error rate:", errors*100.0/NTEST)
+
+errors = 0
+predictedTrain = []
+for img, lbl in zip(imgs.get_value(), lbls.get_value()):
+        p = predict(img)
+        predictedTrain.append(p)
+        if (p != lbl):
+            errors += 1
+
+print("Train errors:", errors, "Error rate:", errors*100.0/NTRAIN)
+
+algDescription = "Algoritmo con backpropagation en una CNN con una capa oculta de \n"
+algDescription += str(nHidden) + " neuronas con función de activación sigmoidal. Y una capa de\n"
+algDescription += "salida tipo softmax. Usando una tasa de aprenzidaje de" + str(lr) +"\n y dando "
+algDescription += str(epochs) + " al conjunto de train. Previamente se pasand dos filtros de convolucion"
+algDescription += " y pooling (/2). Ambos filtros son 5x5, en la primera capa hay 6 y en el otro 256."
+saveData(algDescription, predictedTrain, predictedTest, t1-t0, filename+".txt")
