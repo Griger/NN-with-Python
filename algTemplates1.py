@@ -11,35 +11,45 @@ lbls = np.load("data/trainLbl.npy")
 imgsTest = np.load("data/testImg.npy")
 lblsTest = np.load("data/testLbl.npy")
 
-lr = 0.1 #learn rate
+lr = 0.1 #learning rate
 
+#initialize weights in [0,1]
 w = np.random.rand(ROWS*COLS, 10).astype(config.floatX)
 
 u = T.vector('u')
 X = T.matrix('X')
 
+#function that computes vector matrix product
 dot = function([u,X], T.dot(u,X))
 
+#NN training
 t0 = time.time()
 for img, lbl in zip(imgs, lbls):
-    predicha = np.argmax(dot(img, w))
-    if (predicha == lbl):
-        w[img > 0,predicha] += lr
+    predicted = np.argmax(dot(img, w))
+    if (predicted == lbl):
+        w[img > 0,predicted] += lr
     else:
-        w[img > 0, predicha] -= lr
+        w[img > 0, predicted] -= lr
 t1 = time.time()
 
-print("Hemos tardado: ", (t1-t0))
+print("Training time: ", (t1-t0))
 
-errores = 0
-
-predichas = []
+errors = 0
+predictedTest = []
 for img, lbl in zip(imgsTest, lblsTest):
-    predicha = np.argmax(dot(img, w))
-    predichas.append(predicha)
-    if (predicha != lbl):
-        errores += 1
+    predicted = np.argmax(dot(img, w))
+    predictedTest.append(predicted)
+    if (predicted != lbl):
+        errors += 1
 
-print("Se han obtenido", errores, "errores. Un", errores/NTEST*100, "%")
+print("Test errors:", errors, "Test error rate:", errors/NTEST*100, "%")
 
-predichas = np.array(predichas)
+errors = 0
+predictedTrain = []
+for img, lbl in zip(imgs, lbls):
+    predicted = np.argmax(dot(img, w))
+    predictedTrain.append(predicted)
+    if (predicted != lbl):
+        errors += 1
+
+print("Train errors:", errors, "Train error rate:", errors/NTRAIN*100, "%")

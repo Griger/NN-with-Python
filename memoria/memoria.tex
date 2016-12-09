@@ -16,7 +16,7 @@
 \title{\textcolor{deepblue}{\textbf{Redes Neuronales para MNIST}}}
 \date{}
 
-%Configurando lstlisting para mostrar código Python con algún esquema de colores (copiado de http://tex.stackexchange.com/questions/83882/how-to-highlight-python-syntax-in-latex-listings-lstinputlistings-command) ------------------------------
+%Configurando lstlisting para mostrar código Python con algún 	 de colores (copiado de http://tex.stackexchange.com/questions/83882/how-to-highlight-python-syntax-in-latex-listings-lstinputlistings-command) ------------------------------
 % Custom colors
 \definecolor{deepblue}{rgb}{0,0,0.5}
 \definecolor{deepred}{rgb}{0.6,0,0}
@@ -74,13 +74,13 @@ En esta práctica se pretende probar distintos algoritmos de aprendizaje y topol
 Las imágenes se cargarán de sendos ficheros comprimidos empleando el código que podemos encontrar en el fichero \archive{reader.py} el cuál se encarga de obtener cada imagen del fichero comprimido, formateando correctamente los bytes que se van leyendo de dicho fichero y normalizando las imágenes para su posterior almacenamiento (en el directorio \archive{data}) y uso. Para realizar esta descompresión y normalización nos hemos basado en el código Java facilitado por el profesor a tal efecto.
 
 \section{Herramientas y entorno de desarrollo}
-Para la realización de esta práctica hemos optado por emplear el lenguaje \textbf{Python 3} pese a que podemos pensar que no es tan eficiente como otros lenguajes, tiene la ventaja de contar con el módulo \textbf{Numpy} cuyas operaciones están programadas en código C lo que lo hace muy eficiente para realizar cálculos vectoriales.\\
+Para la realización de esta práctica hemos optado por emplear el lenguaje \textbf{Python 3} pese a que podemos pensar que no es tan eficiente como otros lenguajes, tiene la ventaja de contar con el módulo \textbf{Numpy} cuyas operaciones están programadas en código C lo que lo hace muy eficiente para realizar cálculos matriciales.\\
 
-No obstante nosotros vamos a trabajar con otro módulo Python llamado \href{http://deeplearning.net/software/theano/index.html}{Theano} el cuál nos permite, de un modo transparente, realizar cálculos en la GPU, lo que en la mayoría de los casos hará que los cálculos a realizar sean mucho más eficientes. Aunque hemos de tener cuidado ya que, en primer lugar los cálculos han de realizarse empleando float32 en lugar de float64 para que se puedan realizar efectivamente en la GPU (en caso de no poderse realizar en GPU automáticamente se lanzarán en CPU a no ser que empleemos el flag \textit{force\_devide=True}). Por otro lado habrá código que se ejecuten más lento en la GPU que en la CPU ya sea porque no los hemos programado bien o porque no suponen un volumen de trabajo suficiente como para que la sobrecarga de enviar la información a la GPU sea rentable.\\
+No obstante nosotros vamos a trabajar con otro módulo Python llamado \href{http://deeplearning.net/software/theano/index.html}{Theano} el cuál nos permite, de un modo transparente, realizar cálculos en la GPU, lo que en la mayoría de los casos hará que los cálculos a realizar sean mucho más eficientes. Aunque hemos de tener cuidado ya que, en primer lugar los cálculos han de realizarse empleando float32 en lugar de float64 para que se puedan realizar efectivamente en la GPU (en caso de no poderse realizar en GPU automáticamente se lanzarán en CPU a no ser que empleemos el flag \textit{force\_devide=True}). Por otro lado habrá código que se ejecuten más lento en la GPU que en la CPU ya sea porque no los hemos programado bien o porque no suponen un volumen de trabajo suficiente como para que la sobrecarga de enviar la información a la GPU sea rentable. No obstante pese a que no podamos realizar las operaciones en la GPU, las operaciones y funciones que proporciona \code{Theano} están también optimizadas, además de que la funciones Theano que declaremos serán compiladas, lo que las hace más rápidas.\\
 
 A fin de poder emplear esta computación en GPU ejecutaremos el archivo \archive{reader.py} la instrucción \code{THEANO\_FLAGS=mode=FAST\_RUN,device=cpu,floatX=float32 python reader.py}.\\
 
-En la \href{http://deeplearning.net/software/theano/tutorial/using_gpu.html}{página} de Theano donde se nos explica cómo usar la GPU hay un código de ejemplo el cuál se ejecuta en menos de 1/3 del tiempo que se consumiría ejecutando dicho código en CPU.
+En la \href{http://deeplearning.net/software/theano/tutorial/using_gpu.html}{página} de Theano donde se nos explica cómo usar la GPU, hay un código de ejemplo el cuál se ejecuta en menos de 1/3 del tiempo que se consumiría ejecutando dicho código en CPU.
 
 Por otro lado podemos encontrar un ejemplo sobre cómo programar una red neuronal que trabaje con minilotes de un modo eficiente usando la funcionalidad de Theano:
 
@@ -130,7 +130,7 @@ Las pruebas se realizarán en un ordeandor con \textbf{Arch Linux 64b}, \textbf{
 
 \section{Algoritmos basados en plantillas}
 
-A continuación vamos a ver los primeros algoritmo de aprendizaje que vimos en clase y que son de un funcionamiento muy básico. Estos algoritmos podríamos decir que están basados en plantillas ya que tenemos una neurona por cada uno de los dígitos a distinguir y se irán actualizando los peso de cada una a fin de reforzar aquellos píxeles que forman parte del número que cada una ha de reconocer y se irán debilitando los pesos de los píxeles que no forman parte del dígito que tienen que reconer y que por tanto sólo puede llevar a la neurona, y por última instancia a la red, a confusión. Por esto decimos que estos algoritmos se basan en plantillas, cada neurona almacenará una plantilla 28x28 que le dará los pesos que necesita para reconocer el dígito concreto que ha de reconocer. Contemplearemos tres aproximaciones, con una topología que podríamos describir por medio del siguiente esquema:
+A continuación vamos a ver los primeros algoritmo de aprendizaje que vimos en clase y que son de un funcionamiento muy básico. Estos algoritmos podríamos decir que están basados en plantillas ya que tenemos una neurona por cada uno de los dígitos a distinguir y se irán actualizando los peso de cada una a fin de reforzar aquellos píxeles que forman parte del número que cada una ha de reconocer y se irán debilitando los pesos de los píxeles que no forman parte del dígito que tienen que reconocer, y que por tanto sólo puede llevar a la neurona, y por última instancia a la red, a confusión. Por esto decimos que estos algoritmos se basan en plantillas, cada neurona almacenará una plantilla 28x28 que le dará los pesos que necesita para reconocer el dígito concreto que ha de reconocer. Contemplaremos tres aproximaciones, con una topología que podríamos describir por medio del siguiente esquema:
 
 \begin{center}
 \begin{tikzpicture}[shorten >=1pt,->,draw=black!50, node distance=\layersep]
@@ -176,11 +176,23 @@ Hay que señalar que en caso de realizar esta actualización a todos los pesos d
 \subsection{Penalización fija y refuerzo de neurona correcta (Plantillas 2)}
 \archive{algTemplates2.py}\\
 
-En este caso es mucho menor el tiempo al ejecutar el cógido en CPU que en GPU (en CPU tadamos menos de 3 segundos y en cambio en GPU tarda algo más de 25), es decir, tal y como está planteado el algoritmo la sobrecarga que supone trasladar la información a la GPU es mayor que el tiempo de ejecución del algoritmo en sí.\\
+En este caso y en el anterior es mucho menor el tiempo al ejecutar el cógido en CPU que en GPU (en CPU tadamos menos de 3 segundos y en cambio en GPU tarda algo más de 25), es decir, tal y como está planteado el algoritmo la sobrecarga que supone trasladar la información a la GPU es mayor que el tiempo de ejecución del algoritmo en sí.\\
 
 Hay algo que destacar y es que en una primera prueba se había omitido el vector de bias, y el error era ligeramente menor que al incorporarlo. En mi opinión esto se debe a que como estamos trabajando con un sistema de plantillas lo único que hacemos al incorporar este elemento es introducir una información que realmente es ficticia; la actualización de pesos viene sólo dada por los píxeles activos en la imagen de entrada.\\
 
-Este algoritmo mejora sustancialmente al anterior en tasa de error puesto que no sólo se limita a penalizar o compensar a la neurona que dio la salida mayor, la que se consideraría para la clasificación, sino que además en todos los casos se refuerza aquella neurona que debería haber sido la que diese la clase correcta de la imagen.
+Este algoritmo mejora sustancialmente al anterior en tasa de error puesto que no sólo se limita a penalizar o compensar a la neurona que dio la salida mayor, la que se consideraría para la clasificación, sino que además en todos los casos se refuerza aquella neurona que debería haber sido la que diese la clase correcta de la imagen. Aunque no vamos a mostrar el código entero ya que detalles importantes del mismo se aclaran para el código del siguiente algoritmo, sí que vamos a mostrar el código que actualiza los pesos de la red:
+
+\begin{lstlisting}
+for img, lbl in zip(imgs, lbls):
+    predicted = np.argmax(dot(img, w))
+    if (predicted == lbl):
+        w[img > 0,predicted] += lr
+    else:
+        w[img > 0, int(lbl)] += lr
+        w[img > 0, predicted] -= lr
+\end{lstlisting}
+
+Aquí podemos ver cómo se calcular la clase predicha por la red neuronal y en caso de acertar se refuerza la neurona que la predijo, seleccionando sólo aquellos pesos asociados a píxeles activos en la imagen (\code{img > 0}) y en otro caso se penaliza esa neurona y se refuerza la neurona correcta.
 
 \subsection{Actualización de pesos según el error (Plantillas 3)}
 \archive{algTemplates3.py}\\
@@ -191,7 +203,7 @@ Este algoritmo pretende contruir una plantilla pero empleando más información 
 
 Tanto para este algoritmo como para los dos anteriores, dado que el tiempo de entrenamiento es muy reducido hemos optado por no almacenar los pesos de la red en un archivo para futuros usos, no obstante sí que fijamos la semilla aleatoria al inicio del algoritmo de modo que la inicialización de pesos de las neuronas sea siempre la misma. Se ha probado también a cambiar dicha semilla para asegurar que los resultados obtenidos no se deben al azar de los pesos obtenidos, y se han obtenido resultados muy similares.\\
 
-Además la ejecución de este algoritmo nos ha permitido comprobar que lo que estamos haciendo en cuanto a la codificación de imágenes y las tasas de error calculadas es correcto, ya que obtenemos una tasa de error muy parecida a la que obtiene el desarrollador que ha publicado el algoritmo en el enlace anteriormente mencionado. Vamos ahora a mostrar el código desarrollado a fin de dar algunas ideas sobre la progración con \code{Theano}, que es lo que estamos empleado para las prácticas:\\
+Además la ejecución de este algoritmo nos ha permitido comprobar que lo que estamos haciendo en cuanto a la codificación de imágenes y las tasas de error calculadas es correcto, ya que obtenemos una tasa de error muy parecida a la que obtiene el desarrollador que ha publicado el algoritmo en el enlace anteriormente mencionado. Vamos ahora a mostrar el código desarrollado a fin de dar algunas ideas sobre la programación con \code{Theano}, que es lo que estamos empleado para las prácticas:\\
 
 \begin{lstlisting}
 import numpy as np
@@ -202,10 +214,11 @@ from constants import *
 
 np.random.seed(12345678)
 
-lr = 0.1
+lr = 0.1 #learning rate
 
 imgs = np.load("data/trainImg.npy")
-lbls = np.load("data/binTrainLbl.npy")
+binLbls = np.load("data/binTrainLbl.npy")
+lbls = np.load("data/trainLbl.npy")
 imgsTest = np.load("data/testImg.npy")
 lblsTest = np.load("data/testLbl.npy")
 
@@ -213,29 +226,47 @@ x = T.vector('x')
 y = T.vector('y')
 A = T.matrix('A')
 
+#initialize weights in [0,1]
 w = shared(np.random.rand(ROWS*COLS, 10).astype(config.floatX))
 
 out = T.dot(x, w)/(28.0*28.0)
 err = y - out
+
+#gw represents the weight increments
 gw, aux = scan(lambda scalar,x: scalar * x, sequences=[err], non_sequences=x)
 
+#function that trains the NN with a train image, update weights
 train = function([x, y], err, updates = {w: w + (lr * gw.T)})
 
-#Train
+#NN training
 t0 = time.time()
-for img, lbl in zip(imgs, lbls):
+for img, lbl in zip(imgs, binLbls):
     train(img, lbl)
 t1 = time.time()
 
+print("Training time: ", (t1-t0))
+
+#function that computes vector matrix product
 dot = function([x,A], T.dot(x,A))
-#Test
-predicted = []
-nError = 0
+
+predictedTest = []
+errors = 0
 for img, lbl in zip(imgsTest, lblsTest):
     p = np.argmax(dot(img, w.get_value()))
-    predicted.append(p)
+    predictedTest.append(p)
     if p != lbl:
-        nError += 1
+        errors += 1
+print("Test errors:", errors, "Error rate:", errors*100.0/NTEST)
+
+predictedTrain = []
+errors = 0
+for img, lbl in zip(imgs, lbls):
+    p = np.argmax(dot(img, w.get_value()))
+    predictedTrain.append(p)
+    if p != lbl:
+        errors += 1
+
+print("Train errors:", errors, "Train error rate:", errors/NTRAIN*100, "%")
 \end{lstlisting}
 
 Lo primero que observamos es la fijación de la semilla aleatoria y la declaración de la tasa de aprendizaje, \code{lr}, a continuación cargamos todos los datos de la base. Ahora ya encontramos código de Theano, en primer lugar estamos definición unas variables simbólicas que nos servirán como base para definir otras tantas, con estas variables es con las que definimos las funciones Theano que serán compiladas.\\
@@ -244,11 +275,27 @@ Así denimos una variable \textit{shared}, \code{w}, que es una matriz $28^2 \ma
 
 A continuación definimos la variable que representará la salida, como vemos esta variable será el resultado de multiplicar el vector, que será la variable de entrada, por cada columna de la matriz, normalizado de modo que la salida quede en el [0,1]. Y definimos el error como un vector que será la diferencia entre el vector esperado, que representa la clase de la imagen de entrada, y la salida obtenida.\\
 
-Ahora vamos a calcular la matriz de incrementos para la matriz de pesos, \code{gw}, esto lo hacemos por medio de la función \code{scan} de Theano que es algo parecido a los bucles de Theano que resultan algo más rápidos que un for usual; se realizó un pequeó experimento y se notó la diferencia de tiempos. Con esto definimos una nueva variable que almacena el resultado de multiplicar la entrada (representada por la variable simbólica \code{x}) por el error de cada una de las neuronas, representado por el vector simbólico \code{err}, que se recorre elemento a elemento y por esto se añada a la lista de \code{sequences} de la función \code{scan}; con la variable aux sólo recogemos el otro elemento devuelto por esta función que no vamos pasar a explicar pues no nos interesa en este momento.\\
+Ahora vamos a calcular la matriz de incrementos para la matriz de pesos, \code{gw}, esto lo hacemos por medio de la función \code{scan} de Theano que es algo parecido a los bucles de Theano que resultan algo más rápidos que un for usual; se realizó un pequeño experimento y se notó la diferencia de tiempos. Con esto definimos una nueva variable que almacena el resultado de multiplicar la entrada (representada por la variable simbólica \code{x}) por el error de cada una de las neuronas, representado por el vector simbólico \code{err}, que se recorre elemento a elemento y por esto se añada a la lista de \code{sequences} de la función \code{scan}; con la variable aux sólo recogemos el otro elemento devuelto por esta función que no vamos pasar a explicar pues no nos interesa en este momento.\\
 
-Por último definimos una función Theano con el comando \code{function} que recibe como entradas dos vectores, que serán la imagen y el vector binario que codifica la clase, que calcula la variable \code{err} para dichas entradas y actualiza la matriz de pesos, \code{w}, sumándole la matriz de incrementos que se deriva del error multiplicada por la tasa de aprendizaje.\\
+Por último definimos una función Theano con el comando \code{function} que recibe como entradas dos vectores, que serán la imagen y el vector binario que codifica la clase de asociada a a imagen por medio de un vector binario, que calcula la variable \code{err} para dichas entradas y actualiza la matriz de pesos, \code{w}, sumándole la matriz de incrementos que se deriva del error, multiplicada por la tasa de aprendizaje. Dicha actualización la realizamos por medio del parámetro \code{updates} del contructor de funciones de Theano. Diciéndole qué actualizar y con qué nuevo valor.\\
 
-Después recorremos en un bucle usual de Python las imágenes de entrenamiento junto con sus vectores binarios de etiquetas y usamos la función que acabamos de definir para ir actualizando los pesos de la matriz según la salida obtenida para estas imágenes. Luego no hacemos más que emplear la red entrenada para obtener la clase que nos da para las imágenes de test, que será la correspondiente a la salida más alta de las diez neuronas (por esto empleamos \code{argmax}) y calculamos el número de errores obtenido. Observemos que también hemos definido una función para calcular el producto de un vector por una matriz con tal propósito.
+Después recorremos en un bucle usual de Python las imágenes de entrenamiento junto con sus vectores binarios de etiquetas y usamos la función que acabamos de definir para ir actualizando los pesos de la matriz según la salida obtenida para estas imágenes. Luego no hacemos más que emplear la red entrenada para obtener la clase que nos da para las imágenes de test y train, que será la correspondiente a la salida más alta de las diez neuronas (por esto empleamos \code{argmax}) y calculamos el número de errores obtenido. Observemos que también hemos definido una función para calcular el producto de un vector por una matriz con tal propósito.\\
+
+Aquí recogemos los resultados obtenidos por estos tres algoritmos. Como vemos no se han almacenado en un fichero los pesos de las correspondientes redes entrenadas ya que, como son algoritmos muy rápidos, no se ha considerado necesario:
+
+\begin{table}[H]
+\centering
+\caption{Resumen de resultados plantillas}
+\label{my-label}
+\begin{tabular}{|
+>{\columncolor[HTML]{FFFFC7}}c |c|c|c|c|c|}
+\hline
+\cellcolor[HTML]{FFFC9E}\textbf{Algoritmo} & \cellcolor[HTML]{9AFF99}\textbf{\begin{tabular}[c]{@{}c@{}}Archivo\\ algoritmo\end{tabular}} & \cellcolor[HTML]{9AFF99}\textbf{\begin{tabular}[c]{@{}c@{}}Archivo \\ pesos\end{tabular}} & \cellcolor[HTML]{FD6864}\textbf{\begin{tabular}[c]{@{}c@{}}\% Error\\ entrenamiento\end{tabular}} & \cellcolor[HTML]{FD6864}\textbf{\begin{tabular}[c]{@{}c@{}}\% Error\\ test\end{tabular}} & \cellcolor[HTML]{FFFFFF}\textbf{\begin{tabular}[c]{@{}c@{}}Tiempo \\ entrenamiento\end{tabular}} \\ \hline
+Plantillas 1                               & algTemplates1.py                                                                             & -                                                                                         & 44.17                                                                                                  & 44.17                                                                                         & 2.33                                                                                                  \\ \hline
+Plantillas 2                               & algTemplates2.py                                                                             & -                                                                                         & 17.65                                                                                                   & 16.43                                                                                          & 2.36                                                                                                  \\ \hline
+Plantillas 3                               & algTemplates3.py                                                                             & -                                                                                         & 16.13                                                                                                   & 15.52                                                                                          & 1.84                                                                                                  \\ \hline
+\end{tabular}
+\end{table}
 
 \section{Backpropagation}
 
