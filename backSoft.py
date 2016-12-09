@@ -7,10 +7,11 @@ from utils import saveData
 
 np.random.seed(12345678)
 
-lr = 0.1
-nHidden = 256
+lr = 0.1 #learning rate
+nHidden = 256 #hidden layer units
 epochs = 100
 
+#load data
 imgs = np.load("data/trainImg.npy")
 lbls = np.load("data/trainLbl.npy")
 binLbls = np.load("data/binTrainLbl.npy")
@@ -19,6 +20,8 @@ lblsTest = np.load("data/testLbl.npy")
 
 x = T.vector('x')
 y = T.vector('y')
+
+#initialize weights in [-0.1, 0.1]
 W1 = shared(np.random.normal(loc=0, scale=.1, size=(784, nHidden)).astype(config.floatX), name = 'W1')
 b1 = shared(np.random.normal(loc=0, scale=.1, size=nHidden).astype(config.floatX), name = 'b1')
 W2 = shared(np.random.normal(loc=0, scale=.1, size=(nHidden, 10)).astype(config.floatX), name = 'W2')
@@ -36,7 +39,7 @@ out = 1.0 / (1.0 + T.exp(-(T.dot(hid, W2) + b2)))
 # hid = 1.7159 * T.tanh(0.67 * (T.dot(x, W1) + b1) )
 # out = 1.7159 * T.tanh(0.67 * (T.dot(hid, W2) + b2) )
 
-y_hat = T.nnet.softmax(out)
+y_hat = T.nnet.softmax(out) #softmax output
 #err = 0.5 * T.sum(y - y_hat) ** 2 #mean square error
 err = - T.sum(y * T.log(y_hat)) #cross-entropy error
 prediction = T.argmax(y_hat)
@@ -44,7 +47,6 @@ prediction = T.argmax(y_hat)
 #define gradients
 dW1, db1, dW2, db2 = T.grad(err, [W1, b1, W2, b2])
 
-salida = function([x], y_hat)
 predict = function([x], prediction)
 train = function([x, y], err,
     updates={
@@ -53,6 +55,7 @@ train = function([x, y], err,
         (W1, W1 - lr * dW1),
         (b2, b2 - lr * db2)})
 
+#functions to make a bunch of predictions from an image matrix
 A = T.matrix('A')
 hidMatrix = 1.0 / (1.0 + T.exp(-(T.dot(A, W1) + b1)))
 outMatrix = 1.0 / (1.0 + T.exp(-(T.dot(hidMatrix, W2) + b2)))

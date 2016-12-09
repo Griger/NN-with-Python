@@ -35,3 +35,10 @@ errorRates = c(6.3, 4.8, 3.26, 2.53, 2.31, 2.19, 2.29, 2.33, 3.07)
 p <- ggplot(NULL, aes(rates))
 p <- p + geom_point(aes(y = errorRates, colour = "blue")) + geom_line(aes(y = errorRates, colour = "blue")) + ylab('tasa de error en test (%)') + xlab('tasa de aprendizaje')
 p <- p + scale_color_manual(values=c("#CC6666"), guide = FALSE, labels = rates)
+
+#Convolutional NN experiment
+X = seq(0,55,5)
+testConv = c(4.33, 1.34, 1.27, 1.03, 0.95, 0.88, 0.94, 0.87, 0.85, 0.85, 0.86, 0.85)
+conv <- ggplot(NULL, aes(X))
+conv <- conv + geom_point(aes(y = testConv, colour = "blue")) + geom_line(aes(y = testConv, colour = "blue"))
+conv <- conv + ylab('tasa de error en test (%)') + xlab('pasadas al conjunto') + scale_color_manual(values=c("#CC6666"), guide = FALSE, labels = rates)

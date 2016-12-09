@@ -299,7 +299,7 @@ Plantillas 3                               & algTemplates3.py                   
 
 \section{Backpropagation}
 
-A continuación vamos a pasar a trabajar con neuronas que emplean el \newline mecanismo de propagación hacia atrás para actualizar los pesos de las neuronas que la forman, tendremos una red muy simple con una sola capa oculta. Así la topología que tendremos de inicio será la siguiente será la siguiente:
+A continuación vamos a pasar a trabajar con redes neuronales que emplean el \newline mecanismo de propagación hacia atrás para actualizar los pesos de las neuronas que la forman, tendremos una red muy simple con una sola capa oculta. Así la topología que tendremos de inicio será la siguiente será la siguiente:
 
 \begin{center}
 \begin{tikzpicture}[shorten >=1pt,->,draw=black!10, node distance=\layersep]
@@ -348,9 +348,9 @@ A continuación vamos a pasar a trabajar con neuronas que emplean el \newline me
 \end{tikzpicture}
 \end{center}
 
-Los experimentos realizados para ajustar los parámetros de la red se han realizado atendiendo a la tasa de error en el conjunto de test. En la práctica deberían hacerse sobre un conjunto de validación, pero para poder emplear todas las muestras de entrenamiento disponibles para entrenar la red hemos optado por esta opción.\\
+Los experimentos realizados para ajustar los parámetros de la red se han realizado atendiendo a la tasa de error en el conjunto de test. En la práctica deberían hacerse sobre un conjunto de validación, pero para poder emplear todas las muestras de entrenamiento disponibles para entrenar la red hemos optado por esta opción. También es habitual realizar \textit{deformaciones} a los datos de train a fin de poder contar con un número más elevado de muestras para el entrenamiento y poder tener así un conjunto de validación, sin embargo no se ha optado por tal alternativa.\\
 
-Gracias a la posibilidad de realizar cálculo simbólico con la libería Theano implementar los algoritmos de este estilo resulta muy sencillo ya que no necesitamos calcular el gradiesnte del error respecto a los distintos pesos de la red neuronal para poder propagar el error. Simplemente tenemos que realizar una declaración de variables simbólicas como la que se muestra en el siguiente framento de código que extraído del archivo \archive{backSoft.py}.
+Gracias a la posibilidad de realizar cálculo simbólico con la libería Theano implementar los algoritmos de este estilo resulta muy sencillo ya que no necesitamos calcular el gradiente del error respecto a los distintos pesos de la red neuronal para poder propagar el error. Simplemente tenemos que realizar una declaración de variables simbólicas como la que se muestra en el siguiente fragmento de código que extraído del archivo \archive{backSoft.py}.
 
 \begin{lstlisting}
 W1 = shared(np.random.normal(loc=0, scale=.1, size=(784, nHidden))
@@ -373,14 +373,25 @@ prediction = T.argmax(y_hat)
 dW1, db1, dW2, db2 = T.grad(err, [W1, b1, W2, b2])
 \end{lstlisting}
 
-Como podemos ver declaramos diversas variables simbólicas entre las que se encuentran las matrices de pesos de la red, y definimos una variable simbólica \code{err} que representa el error de entropía cruzada, que es la función de coste asociada a una capa de salida de tipo softmax. Finalmente definimos las variables \code{dW1, db1, dW2, db2}, que serán las derivadas de dicho error con respecto a las distintas matrices y vectores de pesos de la red haciendo uso de la función \code{grad} de la biblioteca Theano.
+Como podemos ver declaramos diversas variables simbólicas entre las que se encuentran las matrices de pesos de la red, y definimos una variable simbólica \code{err} que representa el error de entropía cruzada, que es la función de coste asociada a una capa de salida de tipo softmax. Finalmente definimos las variables \code{dW1, db1, dW2, db2}, que serán las derivadas de dicho error con respecto a las distintas matrices y vectores de pesos de la red haciendo uso de la función \code{grad} de la biblioteca Theano. También señalar que la función de activación empleada para las neuronas de la red es la sigmoide.\\
+
+También, y para agilizar el proceso de etiquetado de las imágenes de test y train para calcular las correspondientes tasas de error, hemos declarado diversas funciones theano que se ocupan de, a partir de una matriz de imágenes (ya que representamos las imágenes como vectores, pues no necesitamos, por ahora, tenerlas en forma matricial), calcular las etiquetas predichas por la red para ellas:
+
+\begin{lstlisting}
+A = T.matrix('A')
+hidMatrix = 1.0 / (1.0 + T.exp(-(T.dot(A, W1) + b1)))
+outMatrix = 1.0 / (1.0 + T.exp(-(T.dot(hidMatrix, W2) + b2)))
+y_hatMatrix = T.nnet.softmax(outMatrix)
+predictions = T.argmax(y_hatMatrix, axis = 1)
+predictMatrix = function([A], predictions)
+\end{lstlisting}
 
 \subsection{Softmax}
 \archive{backSoft.py}\\
 
 Siguiendo los experimentos de los que se hablan en el guión de la práctica hemos implementado el algoritmo de backpropagation haciendo uso de una capa de salida de tipo softmax.\\
 
-Para implementar esta capa de salida hemos hecho uso, como se muestra en el código que hemos mostrado anteriormente, de la función \code{softmax} de Theano. También hemos de definir el error como el error de entropía cruzada, ya que si por ejemplo definimos el error como el error cuadrático medio, la tasa de error aumentará mucho. Además pese a que Theano dispone de una función para calcular este error, nos daba un error en cuanto al tipo del vector de salidas, con lo cual simplemente hemos definido nosotros mismos tal error, que como vemos resulta muy cómodo: el opuesto de la sumatoria del producto de cada salida de la red con la salida esperada; hacemos uso de la clase de cada imagen representada por medio de un vector binario. Los experimentos que hemos realizado sobre este algoritmo se han centrado en modificar el número de neuronas de la capa oculta así como la tasa de aprendizaje a fin de poder ver sus efectos.\\
+Para implementar esta capa de salida hemos hecho uso, como se ve en el código que hemos mostrado anteriormente, de la función \code{softmax} de Theano. También hemos de definir el error como el error de entropía cruzada, ya que si por ejemplo definimos el error como el error cuadrático medio, la tasa de error aumentará mucho. Además pese a que Theano dispone de una función para calcular este error, nos daba un error en cuanto al tipo del vector de salidas, con lo cual simplemente hemos definido nosotros mismos tal error, que como vemos resulta muy cómodo: el opuesto de la sumatoria del producto de cada salida de la red con la salida esperada; hacemos uso de la clase de cada imagen representada por medio de un vector binario. Los experimentos que hemos realizado sobre este algoritmo se han centrado en modificar el número de neuronas de la capa oculta así como la tasa de aprendizaje a fin de poder ver sus efectos.\\
 
 Comenzamos el experimento con una capa oculta con 256 neuronas al igual que en el ejemplo planteado en el guión de la práctica. En un principio empleamos la tangente hiperbólica como función de activación, esto simplemente implica cambiar la declaración de las variables simbólicas que representan la salida de las dos capas de la red:
 
@@ -445,7 +456,29 @@ logística                                                             & entrop�
 \end{center}
 
 \subsection{Momentos}
-\archive{backSoftMomentums.py}
+\archive{backSoftMomentums.py}\\
+
+A continuación pasamos a incorporar momentos en la actualización de pesos, nuevamente, esto resulta muy sencillo de implemetnar con Theano. Sólo tenemos que declarar nuevas variables donde almacenar el incremento de pesos anterior y modificar el parámetro \code{updates} de la función \code{train}:
+
+\begin{lstlisting}
+prevDeltaW1 = shared(np.zeros((784, nHidden), dtype = config.floatX), name = 'prevDeltaW1')
+prevDeltab1 = shared(np.zeros(nHidden, dtype = config.floatX), name = 'prevDeltab1')
+prevDeltaW2 = shared(np.zeros((nHidden, 10), dtype = config.floatX), name = 'prevDeltaW2')
+prevDeltab2 = shared(np.zeros(10, dtype = config.floatX), name = 'prevDeltab2')
+
+train = function([x, y], err,
+    updates={
+        (W2, W2 - lr * dW2 - eta * prevDeltaW2),
+        (b1, b1 - lr * db1 - eta * prevDeltab1),
+        (W1, W1 - lr * dW1 - eta * prevDeltaW1),
+        (b2, b2 - lr * db2 - eta * prevDeltab2),
+        (prevDeltab2, db2),
+        (prevDeltaW1, dW1),
+        (prevDeltaW2, dW2),
+        (prevDeltab1, db1)})
+\end{lstlisting}
+
+Aquí se muestran los experimentos realizados con el mecanismo de momentos, se emplea una tasa de aprendizaje fija así como una tasa para los momentos también fija. En la leyenda de la gráfica \textit{lr} representa la tasa de aprendizaje y \textit{mr} la relativa a los momentos. Sí que se observó que el tiempo de entrenamiento requerido por la red era mayor, debido a la operación a realizar con el antiguo vector de incrementos:
 
 \begin{figure}[H]
 \includegraphics[scale=0.6]{img/momentos.pdf}
@@ -464,52 +497,128 @@ logística                                                             & entrop�
 \end{tabular}
 \end{table}
 
+\section{Convolución}
+\archive{convolutionalNN.py}\\
 
-
-
-
-
-
-
+Por último decidimos programar una red de tipo convolucional para lo que seguimos un \href{http://deeplearning.net/tutorial/lenet.html}{tutorial} que nos ayuda a implementar una red de tipo Lenet5 con Theano de modo que sea eficiente para usar con GPU y además, podemos ver cómo programar de un modo más modularizado que el empleado en algoritmos anteriores. No obstante se ha variado algunos parámetros del algoritmo a fin de adaptarlo a nuestras necesidades. Así la topología que seguiría nuestra red sería la siguiente:
 
 \begin{center}
-\begin{tikzpicture}[shorten >=1pt,->,draw=black!50, node distance=\layersep]
+\begin{tikzpicture}[shorten >=1pt,->,draw=black!10, node distance=\layersep]
     \tikzstyle{every pin edge}=[<-,shorten <=1pt]
-    \tikzstyle{neuron}=[circle,fill=black!25,minimum size=17pt,inner sep=0pt]
-    \tikzstyle{input neuron}=[neuron, fill=green!50];
-    \tikzstyle{output neuron}=[neuron, fill=red!50];
-    \tikzstyle{hidden neuron}=[neuron, fill=blue!50];
+    \tikzstyle{neuron}=[circle,fill=black!25,minimum size=10pt,inner sep=0pt]
+    \tikzstyle{input neuron}=[neuron, fill=green!50, minimum size=5pt];
+    \tikzstyle{convol neuron}=[neuron, fill=brown!50];
+    \tikzstyle{output neuron}=[neuron, fill=orange!50, minimum size =10pt];
+    \tikzstyle{hidden neuron}=[neuron, fill=gray!50];
     \tikzstyle{annot} = [text width=4em, text centered]
 
     % Draw the input layer nodes
-    \foreach \name / \y in {1,...,4}
+    \foreach \name / \y in {0,1}
     % This is the same as writing \foreach \name / \y in {1/1,2/2,3/3,4/4}
-        \node[input neuron, pin=left:Input \#\y] (I-\name) at (0,-\y) {};
+        \node[input neuron, pin=left:$pixel_{\y}$] (I-\name) at (0,-0.5*\y cm) {};
+    
+    \node at (0,-0.5*3) {\vdots};
+    \node[input neuron, pin=left:$pixel_{782}$] (I-782) at (0,-0.5*5) {};
+    \node[input neuron, pin=left:$pixel_{783}$] (I-783) at (0,-0.5*6) {};
+    
+    % Draw first convol layer
+    \foreach \name / \y in {1,...,6}
+    		\node[convol neuron] (C-\name) at (\layersep,-0.5*\y cm) {};
+    		
+    	 % Draw second convol layer
+    \node at (2*\layersep,-0.5*3) {\vdots};	
+    	    	
+    	\foreach \name / \y in {0,1,7,8}
+        \path[yshift=0.5cm]
+            node[convol neuron] (CC-\name) at (2*\layersep,-0.5*\y cm) {};
 
     % Draw the hidden layer nodes
-    \foreach \name / \y in {1,...,5}
+    \node at (3*\layersep,-0.5*3) {\vdots};
+    \foreach \name / \y in {0,1,7,8}
         \path[yshift=0.5cm]
-            node[hidden neuron] (H-\name) at (\layersep,-\y cm) {};
-
-    % Draw the output layer node
-    \node[output neuron,pin={[pin edge={->}]right:Output}, right of=H-3] (O) {};
+            node[hidden neuron] (H-\name) at (3*\layersep,-0.5*\y cm) {};
+    
+    %Draw output layer nodes  
+    \foreach \name / \y in {0,...,9}
+        \path[yshift=0.5cm]
+            node[output neuron, pin={[pin edge={->}]right:$salida_{\y}$}] (O-\name) at (4*\layersep,-\y*0.5 cm) {};
 
     % Connect every node in the input layer with every node in the
-    % hidden layer.
-    \foreach \source in {1,...,4}
-        \foreach \dest in {1,...,5}
-            \path (I-\source) edge (H-\dest);
+    % first convolutional layer.
+    \foreach \source in {0,1,782,783}
+        \foreach \dest in {1,...,6}
+            \path (I-\source) edge (C-\dest);
+            
+    % Connect every node in the first convolutional layer with every node in the
+    % second convolutional layer.
+    \foreach \source in {1,...,6}
+        \foreach \dest in {0,1,7,8}
+            \path (C-\source) edge (CC-\dest);
+            
+    % Connect every node in the second convolutional layer with every node in the
+    % hidden convolutional layer.
+    \foreach \source in {0,1,7,8}
+        \foreach \dest in {0,1,7,8}
+            \path (CC-\source) edge (H-\dest);
 
     % Connect every node in the hidden layer with the output layer
-    \foreach \source in {1,...,5}
-        \path (H-\source) edge (O);
+    \foreach \source in {0,1,7,8}
+    		\foreach \dest in {0,...,9}
+        		\path (H-\source) edge (O-\dest);
 
     % Annotate the layers
-    \node[annot,above of=H-1, node distance=1cm] (hl) {Capa oculta};
-    \node[annot,left of=hl] {Entradas};
-    \node[annot,right of=hl] {Salida};
+    \node[annot,above of=H-0, node distance=1cm] (hl) {Capa oculta};
+    \node[annot,left of=hl] (cp2) {Convol + Pool};
+    \node[annot,left of=cp2] (cp1) {Convol + Pool};
+    \node[annot,left of=cp1] {Entradas};
+    \node[annot,right of=hl] {Salidas};
 \end{tikzpicture}
 \end{center}
+
+Como vemos tenemos dos capas que realizan convolución y pooling; el pooling empleado reducirá la dimensionalidad de la matriz recibida a la mitad. En la primera capa de convolución tendremos sólamente 6 filtros de características o 6 neuronas convolucionales, y en la segunda tenemos 256. Después pasamos a una red neuronal usual con 256 neuronas en la capa oculta y las 10 neuronas de la capa de salida de tipo softmax que teníamos antes. En todas las neuronas estamos empleando la función sigmoidal como función de activación. El error que derivamos y propagamos en nuevamente el error de entropía cruzada. Pasamos a ver detalles de la implementación de este algoritmo:
+
+Además de declarar dos clases para representar capas de tipo capa oculta que hemos empleado en otros algoritmos y capas de salida de tipo softmax, hemos definido también una clase que representa capas de tipo convolución:
+
+\begin{lstlisting}
+class convPoolLayer:
+    def __init__(self, input, filter_shape, image_shape):
+        self.input = input
+
+        self.W = shared(np.random.normal(loc=0, scale=.1,
+         size=filter_shape).astype(config.floatX), borrow = True)
+        self.b = shared(np.random.normal(loc=0, scale=.1,
+         size=filter_shape[0]).astype(config.floatX), borrow = True)
+
+        conv_out = T.nnet.conv2d(input = input, filters = self.W,
+         filter_shape = filter_shape, input_shape = image_shape)
+        pooled_out = pool.pool_2d(input = conv_out, ds = (2,2), ignore_border  = True)
+
+        self.output = 1.0 / (1.0 + T.exp(-(pooled_out +
+         self.b.dimshuffle('x', 0, 'x', 'x'))))
+        self.params = [self.W, self.b]
+        self.input = input
+\end{lstlisting}
+
+Como vemos inicializamos los pesos en el intervalo [-0.1, 0.1], además el vector \code{filter\_shape} está compuesto por 4 valores: \code{(numero de canales o neuronas en la capa, numero de canales en la imagen de entrada (en nuestro caso 1), altura del filtro de convolucion, anchura del filtro de convolucion)}. Luego en el vector \code{image\_shape} tiene también 4 valores: \code{(tamano del minibatch (en nuestro caso 1 al emplear aprendizaje online), numero de canales en la imagen de entrada, alto imagen de entrada, ancho de la imagen de entrada)}.\\
+
+A continuación empleamos la función \code{nnet.conv2d} para realizar la convolución de la imagen de entrada con el filtro de convolución empleado, esto hace que la salida tenga dimensión $dimensionEntrada - dimensionFiltro + 1$. A continuación realizamos un pooling sobre esta convolución empleando la función \code{pool.pool\_2d} que por el parámetro \code{ds} que le damos reduce a la mitad las dimensiones de la imagen.\\
+
+Finalmente la salida es la evaluación de la función sigmoide sobre ese pooling añadiéndole el bias que hemos de redimensionar para que se pueda realizar dicha operación.\\
+
+El resto del código es muy sencillo de entender ya que es muy parecido al que hemos venido utilizando en otros algoritmos, cambiando que ahora se definen las 4 capas de la red haciendo uso de los constructores de las clases definidas. Además desde la segunda capa de convolución hasta la capa oculta hemos de realizar una redimensionalización de la salida (\code{layer2\_input = layer1.output.flatten(2)}) para que las operaciones se realicen correctamente.
+
+Experimentos con una red neuronal [6, 256, 256, 10] y en la siguiente gráfica se muestran los resultados obtenidos, con una tasa de aprendizaje de 0.1:
+
+\begin{figure}[H]
+\includegraphics[scale=0.6]{img/convolution.pdf}
+\caption{Experimento con red convolucional}
+\end{figure}
+
+Como podemos ver el error obtenido queda por debajo del 1\%, el mejor resultado es de 0.85, que es el mejor resultado obtenido en este trabajo.\\
+
+Traté de hacer otros experimentos ampliando el número de neuronas de convolución en la primera capa así como las neuronas en la capa oculta, pero dado que el entrenamiento es muy lento y que además los resultados obtenidos eran mucho peores (probablemente debido al sobreaprendizaje) decidí no realizar los experimentos. También probé a cambiar la función de activación a una ReLu pero, probablemente por no saber cómo usar este tipo de redes, los resultados era también muy malos.\\
+
+\textcolor{red}{Señalar que este es el único algoritmo que hemos ejecutado con la GPU.}
 
 \section{Resumen de resultados}
 
@@ -517,25 +626,47 @@ logística                                                             & entrop�
 \centering
 \caption{Resumen de resultados}
 \label{my-label}
-\begin{tabular}{|
->{\columncolor[HTML]{FFFFC7}}c |c|c|c|c|c|}
+\begin{tabular}{|>{\columncolor[HTML]{FFFFC7}}c |c|c|c|c|c|}
 \hline
 \cellcolor[HTML]{FFFC9E}\textbf{Algoritmo} & \cellcolor[HTML]{9AFF99}\textbf{\begin{tabular}[c]{@{}c@{}}Archivo\\ algoritmo\end{tabular}} & \cellcolor[HTML]{9AFF99}\textbf{\begin{tabular}[c]{@{}c@{}}Archivo \\ pesos\end{tabular}} & \cellcolor[HTML]{FD6864}\textbf{\begin{tabular}[c]{@{}c@{}}\% Error\\ entrenamiento\end{tabular}} & \cellcolor[HTML]{FD6864}\textbf{\begin{tabular}[c]{@{}c@{}}\% Error\\ test\end{tabular}} & \cellcolor[HTML]{FFFFFF}\textbf{\begin{tabular}[c]{@{}c@{}}Tiempo \\ entrenamiento\end{tabular}} \\ \hline
-Plantillas 1                               & algTemplates1.py                                                                             & -                                                                                         &                                                                                                   &                                                                                          &                                                                                                  \\ \hline
-Plantillas 2                               & algTemplates2.py                                                                             & -                                                                                         &                                                                                                   &                                                                                          &                                                                                                  \\ \hline
-Plantillas 3                               & algTemplates3.py                                                                             & -                                                                                         &                                                                                                   &                                                                                          &                                                                                                  \\ \hline
-Back +softmax                               & backSoft.py                                                                             & -                                                                                         &                                                                                                   &                                                                                          &                                                                                                  \\ \hline
+Plantillas 1                               & algTemplates1.py                                                                             & -                                                                                         & 44.17                                                                                                   & 44.17                                                                                          & 2.33                                                                                                  \\ \hline
+Plantillas 2                               & algTemplates2.py                                                                             & -                                                                                         & 17.65                                                                                                   & 16.43                                                                                          & 2.36                                                                                                  \\ \hline
+Plantillas 3                               & algTemplates3.py                                                                             & -                                                                                         & 16.13                                                                                                   & 15.52                                                                                           & 1.84                                                                                                  \\ \hline
+Back +softmax                               & backSoft.py                                                                             & (*)                                                                                         & 0.53                                                                                                   & 1.82                                                                                          & 1161.96                                                                                                  \\ \hline
+Momentos                               & backSoftMomentums.py                                                                                                                                                     & (**) & 0.47 & 1.6                                                                                          & 5308.86                                                                                                  \\ \hline
+Convolución                               & convolutionalNN.py                                                                             & (***)                                                                                        & 0.21                                                                                                & 0.85                                                                                          & 5648.88                                                                                                  \\ \hline
 \end{tabular}
 \end{table}
 
+(*) No sé qué archivo de pesos corresponde a este resultado. \\
+(**) El archivo de pesos es backSoftwithMomentums0.1EPOCH65NHID700ETA0.1.npz\\
+(***) basicconvolutional256.npz
+
+
 \section{Manual de usuario}
+
+\begin{itemize}
+\item Dado que no se han podido entregar todos los ficheros necesarios debido al peso máximo permitido tendremos que:
+	\begin{itemize}
+	\item Descargar la base de datos facilitada.
+	\item Crear el directorio data donde se almacenarán los archivos generado a partir de ella.
+	\item Ejecutar el reader.py
+	\item Crear los directorios weights y results donde se almacenarán, respectivamente, los pesos de las redes entrenadas y los resultados obtenidos.
+	\end{itemize}
+\item Los archivos generados a partir de la base de datos se encuentran en el directorio \archive{data} y han sido generados haciendo uso del código contenido en \archive{reader.py}. Si queremos volver a generar dichos ficheros tendremos que hacerlo ejecutando el reader con la instrucción que se muestra más adelante.
+\item Los archivos con los pesos de las distintas redes entrenadas están el directorio \archive{weigths} y se han generado haciendo uso de la función \code{savez} de numpy, pueden cargarse dichos pesos usando la función \code{load} del mismo módulo Python.
+\item Algunos archivos que almacenan resultados de las distintas redes están en el direcotrio \archive{results}.
+\item Para ejecutar cualquiera de los algoritmos, una vez tengamos Theano correctamente configurado en nuestra máquina (tenemos tutoriales en la propia web) no hemos más de emplear la siguiente instrucción \code{THEANO\_FLAGS=mode=FAST\_RUN,\\device=cpu,floatX=float32 python ficheroAlgoritmo}. Cambiando si lo deseamos el valor del flag \code{device} por gpu.
+\end{itemize}
 
 \section{Bibliografía}
 
 \begin{itemize}
 	\item \href{http://deeplearning.net/software/theano/index.html}{Documentación Theano}
 	\item \href{http://www.wildml.com/2015/09/speeding-up-your-neural-network-with-theano-and-the-gpu/}{Usando Theano para implementar backpropagation}
-	\item \url{http://deeplearning.net/tutorial/mlp.html} (no usado)
+	
+	\item \href{http://deeplearning.net/tutorial/lenet.html}{Tutorial redes convolucionales en Theano}
+	\item \href{http://deeplearning.net/tutorial/mlp.html}{MLP con Theano, enlazado desde el anterior}
 \end{itemize}
 
 

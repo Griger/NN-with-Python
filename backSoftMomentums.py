@@ -42,8 +42,9 @@ prediction = T.argmax(y_hat)
 #define gradients
 dW1, db1, dW2, db2 = T.grad(err, [W1, b1, W2, b2])
 
-salida = function([x], y_hat)
 predict = function([x], prediction)
+
+##NN training
 train = function([x, y], err,
     updates={
         (W2, W2 - lr * dW2 - eta * prevDeltaW2),
@@ -55,6 +56,7 @@ train = function([x, y], err,
         (prevDeltaW2, dW2),
         (prevDeltab1, db1)})
 
+#functions to make a bunch of predictions from an image matrix 
 A = T.matrix('A')
 hidMatrix = 1.0 / (1.0 + T.exp(-(T.dot(A, W1) + b1)))
 outMatrix = 1.0 / (1.0 + T.exp(-(T.dot(hidMatrix, W2) + b2)))
